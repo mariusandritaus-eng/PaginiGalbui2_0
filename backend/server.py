@@ -138,6 +138,7 @@ class Contact(BaseModel):
     case_number: Optional[str] = None
     person_name: Optional[str] = None
     device_info: Optional[str] = None
+    upload_session_id: Optional[str] = None  # Unique ID for this upload session
     source: Optional[str] = None
     account: Optional[str] = None
     name: Optional[str] = None
