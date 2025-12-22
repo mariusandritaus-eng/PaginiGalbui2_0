@@ -1,0 +1,89 @@
+version: '3.8'
+
+# Pagini Galbui - Network Deployment Configuration
+# Local IP: 10.2.38.171
+# Hostname: paginigalbui
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: paginigalbui_mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: forensics_db
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - paginigalbui_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: paginigalbui_backend
+    restart: always
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - DB_NAME=forensics_db
+      - CORS_ORIGINS=*
+    volumes:
+      - ../uploads:/app/uploads
+    networks:
+      - paginigalbui_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # Frontend (React + Nginx)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # Use relative URL - works with any IP/hostname automatically
+        - REACT_APP_BACKEND_URL=/api
+    container_name: paginigalbui_frontend
+    restart: always
+    networks:
+      - paginigalbui_network
+    depends_on:
+      - backend
+
+  # Nginx Reverse Proxy for Network Access
+  nginx:
+    image: nginx:alpine
+    container_name: paginigalbui_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+      - ../uploads:/app/uploads:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - paginigalbui_network
+
+networks:
+  paginigalbui_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
