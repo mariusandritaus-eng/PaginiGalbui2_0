@@ -815,7 +815,8 @@ def upload_cellebrite_dump(
                 for contact_dict in contacts_data:
                     contact_dict.update({
                         'case_number': case_number, 'person_name': person_name,
-                        'device_info': device_info, 'suspect_phone': suspect_phone
+                        'device_info': device_info, 'suspect_phone': suspect_phone,
+                        'upload_session_id': upload_session_id
                     })
                     
                     # Photo Match Logic
