@@ -161,6 +161,7 @@ class Password(BaseModel):
     case_number: Optional[str] = None
     person_name: Optional[str] = None
     device_info: Optional[str] = None
+    upload_session_id: Optional[str] = None  # Unique ID for this upload session
     application: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
