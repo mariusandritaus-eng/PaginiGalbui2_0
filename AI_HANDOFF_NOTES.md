@@ -495,7 +495,7 @@ This file (`AI_HANDOFF_NOTES.md`) has been completely rewritten on December 22, 
    - All files present and intact
 
 3. **Fixed Frontend Environment Variable**:
-   - **Problem**: `/app/frontend/.env` had `REACT_APP_BACKEND_URL=https://pagini-galbui-1.preview.emergentagent.com`
+   - **Problem**: `/app/frontend/.env` had `REACT_APP_BACKEND_URL=https://local-listings-16.preview.emergentagent.com`
    - **Fixed to**: `REACT_APP_BACKEND_URL=/api` (for Kubernetes ingress routing)
    - This was critical - same issue that occurred in previous session
 
