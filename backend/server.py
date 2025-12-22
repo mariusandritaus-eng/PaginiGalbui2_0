@@ -202,6 +202,7 @@ class SuspectProfile(BaseModel):
     case_number: str
     person_name: str
     device_info: Optional[str] = None
+    upload_session_id: Optional[str] = None  # Unique ID for this upload session
     profile_image_path: Optional[str] = None  # Path to me.jpg
     suspect_phone: Optional[str] = None  # Suspect's phone number
     emails: List[str] = []  # All emails used by the suspect
