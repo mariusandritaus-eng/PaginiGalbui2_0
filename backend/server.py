@@ -991,6 +991,7 @@ def upload_cellebrite_dump(
                 
                 profile = SuspectProfile(
                     case_number=case_number, person_name=person_name, device_info=device_info,
+                    upload_session_id=upload_session_id,
                     profile_image_path=final_profile_path, suspect_phone=suspect_phone, 
                     emails=list(all_emails), user_accounts=user_accounts_for_profile
                 )
