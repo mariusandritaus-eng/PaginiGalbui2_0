@@ -858,6 +858,7 @@ def upload_cellebrite_dump(
                     
                     pwd_dict.update({
                         'case_number': case_number, 'person_name': person_name, 'device_info': device_info,
+                        'upload_session_id': upload_session_id,
                         'email_domain': extract_email_domain(pwd_dict.get('username', '')),
                         'category': categorize_credential(pwd_dict.get('application', ''), pwd_dict.get('username', ''), '', pwd_dict.get('password', ''))
                     })
