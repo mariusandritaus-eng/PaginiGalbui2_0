@@ -179,6 +179,7 @@ class UserAccount(BaseModel):
     case_number: Optional[str] = None
     person_name: Optional[str] = None
     device_info: Optional[str] = None
+    upload_session_id: Optional[str] = None  # Unique ID for this upload session
     source: Optional[str] = None
     username: Optional[str] = None
     user_id: Optional[str] = None
