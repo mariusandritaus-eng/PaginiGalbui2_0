@@ -2561,28 +2561,45 @@ async def get_all_cases():
             # Use person_name (which is actually used in contacts/passwords/accounts)
             person_name = suspect.get('person_name') or suspect.get('suspect_name')
             device = suspect.get('device_info')
+            upload_session_id = suspect.get('upload_session_id')
             
-            contacts_count = await db.contacts.count_documents({
-                "case_number": case,
-                "person_name": person_name,
-                "device_info": device
-            })
+            # Count records for this specific upload session if available
+            if upload_session_id:
+                contacts_count = await db.contacts.count_documents({
+                    "upload_session_id": upload_session_id
+                })
+                
+                passwords_count = await db.passwords.count_documents({
+                    "upload_session_id": upload_session_id
+                })
+                
+                accounts_count = await db.user_accounts.count_documents({
+                    "upload_session_id": upload_session_id
+                })
+            else:
+                # Fallback for old uploads without upload_session_id
+                contacts_count = await db.contacts.count_documents({
+                    "case_number": case,
+                    "person_name": person_name,
+                    "device_info": device
+                })
+                
+                passwords_count = await db.passwords.count_documents({
+                    "case_number": case,
+                    "person_name": person_name,
+                    "device_info": device
+                })
+                
+                accounts_count = await db.user_accounts.count_documents({
+                    "case_number": case,
+                    "person_name": person_name,
+                    "device_info": device
+                })
             
-            passwords_count = await db.passwords.count_documents({
-                "case_number": case,
-                "person_name": person_name,
-                "device_info": device
-            })
-            
-            accounts_count = await db.user_accounts.count_documents({
-                "case_number": case,
-                "person_name": person_name,
-                "device_info": device
-            })
-            
-            # Create session object with timestamp to handle multiple uploads of same person+device
+            # Create session object with upload_session_id for precise tracking
             session = {
-                'session_id': f"{case}_{person_name}_{device}_{suspect.get('created_at', '')}",
+                'session_id': upload_session_id or f"{case}_{person_name}_{device}_{suspect.get('created_at', '')}",
+                'upload_session_id': upload_session_id,
                 'person_name': person_name,
                 'device_info': device,
                 'contacts': contacts_count,
