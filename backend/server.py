@@ -892,6 +892,7 @@ def upload_cellebrite_dump(
                     if any([acc_dict.get('username'), acc_dict.get('email'), acc_dict.get('user_id')]):
                         acc_dict.update({
                             'case_number': case_number, 'person_name': person_name, 'device_info': device_info,
+                            'upload_session_id': upload_session_id,
                             'email_domain': extract_email_domain(acc_dict.get('email', '')),
                             'category': categorize_credential(acc_dict.get('source', ''), acc_dict.get('username', ''), acc_dict.get('email', ''))
                         })
