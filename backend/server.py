@@ -719,6 +719,10 @@ def upload_cellebrite_dump(
     if not file.filename.endswith('.zip'):
         raise HTTPException(status_code=400, detail="Only ZIP files are supported")
     
+    # Generate unique upload session ID for this upload
+    upload_session_id = str(uuid.uuid4())
+    logger.info(f"Starting upload with session ID: {upload_session_id}")
+    
     stats = {'contacts': 0, 'passwords': 0, 'user_accounts': 0, 'upload_time': datetime.now(timezone.utc)}
     
     # Setup Directories
