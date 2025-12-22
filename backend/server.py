@@ -1000,18 +1000,22 @@ def upload_cellebrite_dump(
                 if doc.get('created_at'): doc['created_at'] = doc['created_at'].replace(tzinfo=timezone.utc)
                 if doc.get('updated_at'): doc['updated_at'] = doc['updated_at'].replace(tzinfo=timezone.utc)
 
-                # Check if this exact profile already exists (case + person + device + similar timestamp)
-                # This allows multiple uploads of same person/device by checking timestamp
-                existing = sync_db.suspect_profiles.find_one({
+                # Check if profiles already exist for this case/person/device combination
+                # Find ALL existing profiles and get the most recent one
+                existing_profiles = list(sync_db.suspect_profiles.find({
                     'case_number': case_number,
                     'person_name': person_name,
                     'device_info': device_info
-                })
+                }).sort('created_at', -1))
                 
-                # If existing profile found, check if it's from a different upload session (>5 minutes apart)
-                if existing:
-                    existing_time = existing.get('created_at')
+                # If existing profiles found, check if this is a retry or new upload session
+                if existing_profiles:
+                    # Get the most recent profile
+                    most_recent = existing_profiles[0]
+                    existing_time = most_recent.get('created_at')
                     new_time = doc.get('created_at')
+                    
+                    logger.info(f"Found {len(existing_profiles)} existing profile(s). Most recent: {existing_time}, New: {new_time}")
                     
                     # If more than 5 minutes apart, treat as new upload session
                     if existing_time and new_time:
@@ -1024,25 +1028,31 @@ def upload_cellebrite_dump(
                             new_time = new_time.replace(tzinfo=timezone.utc)
                         
                         time_diff = abs((new_time - existing_time).total_seconds())
+                        logger.info(f"Time difference: {time_diff} seconds")
+                        
                         if time_diff > 300:  # 5 minutes
-                            # New upload session - insert as new profile
+                            # New upload session - ALWAYS insert as new profile
+                            logger.info(f"New upload session (>{time_diff}s apart) - inserting new profile with session {upload_session_id}")
                             sync_db.suspect_profiles.insert_one(doc)
                         else:
-                            # Same upload session - update existing
+                            # Same upload session (retry/re-upload within 5 minutes)
+                            # Update THE MOST RECENT profile only, preserve its upload_session_id
+                            logger.info(f"Retry detected (<{time_diff}s apart) - updating most recent profile")
+                            # Don't overwrite upload_session_id - keep the original one
+                            update_doc = {k: v for k, v in doc.items() if k != 'upload_session_id'}
                             sync_db.suspect_profiles.update_one({
-                                'case_number': case_number,
-                                'person_name': person_name,
-                                'device_info': device_info
-                            }, {'$set': doc})
+                                '_id': most_recent['_id']
+                            }, {'$set': update_doc})
                     else:
-                        # Can't determine time difference, update existing
+                        # Can't determine time difference - treat as retry, update most recent
+                        logger.warning("Can't determine time difference - updating most recent profile")
+                        update_doc = {k: v for k, v in doc.items() if k != 'upload_session_id'}
                         sync_db.suspect_profiles.update_one({
-                            'case_number': case_number,
-                            'person_name': person_name,
-                            'device_info': device_info
-                        }, {'$set': doc})
+                            '_id': most_recent['_id']
+                        }, {'$set': update_doc})
                 else:
                     # No existing profile - insert new one
+                    logger.info(f"No existing profile - inserting first profile with session {upload_session_id}")
                     sync_db.suspect_profiles.insert_one(doc)
 
     except zipfile.BadZipFile:
