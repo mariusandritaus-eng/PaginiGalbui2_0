@@ -2677,7 +2677,7 @@ async def delete_session(case_number: str, person_name: str, device_info: str):
 
 @api_router.delete("/admin/sessions/by-profile/{profile_id}")
 async def delete_session_by_profile(profile_id: str):
-    """Delete a specific upload session by profile ID"""
+    """Delete a specific upload session by profile ID using upload_session_id for precision"""
     try:
         # Get the suspect profile first
         profile = await db.suspect_profiles.find_one({"id": profile_id}, {"_id": 0})
@@ -2687,48 +2687,82 @@ async def delete_session_by_profile(profile_id: str):
         case_number = profile.get('case_number')
         person_name = profile.get('person_name')
         device_info = profile.get('device_info')
+        upload_session_id = profile.get('upload_session_id')
         
-        logger.info(f"Deleting session by profile_id {profile_id}: {case_number}/{person_name}/{device_info}")
+        logger.info(f"Deleting session by profile_id {profile_id}: {case_number}/{person_name}/{device_info} (session: {upload_session_id})")
         
-        # Delete from all collections for this specific profile's upload
-        # Note: We can't use upload_timestamp because contacts/passwords/accounts don't have that field
-        # So we delete by case_number + person_name + device_info
-        # This means if there are multiple uploads of same person/device, we delete ALL of them
-        # TODO: Add upload_timestamp to contacts/passwords/accounts during upload to enable precise deletion
-        contacts_result = await db.contacts.delete_many({
-            "case_number": case_number,
-            "person_name": person_name,
-            "device_info": device_info
-        })
-        
-        passwords_result = await db.passwords.delete_many({
-            "case_number": case_number,
-            "person_name": person_name,
-            "device_info": device_info
-        })
-        
-        accounts_result = await db.user_accounts.delete_many({
-            "case_number": case_number,
-            "person_name": person_name,
-            "device_info": device_info
-        })
+        # Delete using upload_session_id for precision (if available)
+        if upload_session_id:
+            # Precise deletion - only this specific upload
+            contacts_result = await db.contacts.delete_many({
+                "upload_session_id": upload_session_id
+            })
+            
+            passwords_result = await db.passwords.delete_many({
+                "upload_session_id": upload_session_id
+            })
+            
+            accounts_result = await db.user_accounts.delete_many({
+                "upload_session_id": upload_session_id
+            })
+        else:
+            # Fallback: Delete by case_number + person_name + device_info (old behavior)
+            # This will delete ALL uploads for this combination
+            logger.warning(f"No upload_session_id found - deleting ALL data for {case_number}/{person_name}/{device_info}")
+            contacts_result = await db.contacts.delete_many({
+                "case_number": case_number,
+                "person_name": person_name,
+                "device_info": device_info
+            })
+            
+            passwords_result = await db.passwords.delete_many({
+                "case_number": case_number,
+                "person_name": person_name,
+                "device_info": device_info
+            })
+            
+            accounts_result = await db.user_accounts.delete_many({
+                "case_number": case_number,
+                "person_name": person_name,
+                "device_info": device_info
+            })
         
         # Delete the profile itself
         profiles_result = await db.suspect_profiles.delete_one({"id": profile_id})
         
-        # Delete images - need to find the specific subfolder
-        # Since we might have multiple sessions, we can't delete the whole directory
-        # For now, we'll skip image deletion or implement a more sophisticated approach
+        # Delete images folder for this profile
+        # Images are stored in /uploads/CaseNumber/SuspectName/Device/
+        # Since we might have multiple sessions, we should only delete if no other profiles use this folder
+        deleted_images = 0
+        session_dir = Path('/app/uploads') / sanitize_filename(case_number) / sanitize_filename(person_name) / sanitize_filename(device_info)
+        
+        # Check if any other profiles still exist for this case/person/device
+        remaining_profiles = await db.suspect_profiles.count_documents({
+            "case_number": case_number,
+            "person_name": person_name,
+            "device_info": device_info
+        })
+        
+        if remaining_profiles == 0 and session_dir.exists():
+            # No more profiles for this combination - safe to delete images folder
+            import shutil
+            shutil.rmtree(session_dir)
+            deleted_images = 1
+            logger.info(f"Deleted images folder: {session_dir}")
+        else:
+            logger.info(f"Kept images folder (still {remaining_profiles} profiles using it)")
         
         logger.info(f"Session deleted: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts")
         
         return {
             'success': True,
             'profile_id': profile_id,
+            'upload_session_id': upload_session_id,
             'contacts_deleted': contacts_result.deleted_count,
             'passwords_deleted': passwords_result.deleted_count,
             'user_accounts_deleted': accounts_result.deleted_count,
             'suspect_profiles_deleted': profiles_result.deleted_count,
+            'images_folder_deleted': deleted_images > 0,
             'message': f'Successfully deleted session for {person_name} ({device_info})'
         }
         
