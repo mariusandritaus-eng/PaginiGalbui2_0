@@ -798,6 +798,7 @@ def upload_cellebrite_dump(
                     logger.warning(f"Skipping file {xml_path.name}: {e}")
 
             # Extract device info from XML metadata (manufacturer + model)
+            # Try UserAccounts.xml first, then fallback to Contacts.xml if not found
             if accounts_file:
                 xml_content = accounts_file.read_text(encoding='utf-8')
                 extracted_device = extract_device_from_xml(xml_content)
@@ -807,7 +808,20 @@ def upload_cellebrite_dump(
                     # Update directory path with proper device name
                     case_suspect_device_dir = uploads_dir / safe_case / safe_person / safe_device
                     case_suspect_device_dir.mkdir(parents=True, exist_ok=True)
-                    logger.info(f"Device extracted from XML: {device_info}")
+                    logger.info(f"Device extracted from XML (UserAccounts): {device_info}")
+            
+            # Fallback: Try to extract device from Contacts.xml if not extracted yet
+            if not accounts_file and contacts_file and device_info == device_from_filename:
+                logger.info("No UserAccounts.xml found, trying to extract device from Contacts.xml...")
+                xml_content = contacts_file.read_text(encoding='utf-8')
+                extracted_device = extract_device_from_xml(xml_content)
+                if extracted_device:
+                    device_info = extracted_device
+                    safe_device = sanitize_filename(device_info)
+                    # Update directory path with proper device name
+                    case_suspect_device_dir = uploads_dir / safe_case / safe_person / safe_device
+                    case_suspect_device_dir.mkdir(parents=True, exist_ok=True)
+                    logger.info(f"Device extracted from XML (Contacts): {device_info}")
             
             # Extract suspect phone
             suspect_phone = extract_device_owner_phone(temp_path)
