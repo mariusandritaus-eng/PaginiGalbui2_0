@@ -2865,6 +2865,10 @@ async def delete_session_by_profile(profile_id: str):
             accounts_result = await db.user_accounts.delete_many({
                 "upload_session_id": upload_session_id
             })
+            
+            groups_result = await db.whatsapp_groups.delete_many({
+                "upload_session_id": upload_session_id
+            })
         else:
             # Fallback: Delete by case_number + person_name + device_info (old behavior)
             # This will delete ALL uploads for this combination
@@ -2882,6 +2886,12 @@ async def delete_session_by_profile(profile_id: str):
             })
             
             accounts_result = await db.user_accounts.delete_many({
+                "case_number": case_number,
+                "person_name": person_name,
+                "device_info": device_info
+            })
+            
+            groups_result = await db.whatsapp_groups.delete_many({
                 "case_number": case_number,
                 "person_name": person_name,
                 "device_info": device_info
