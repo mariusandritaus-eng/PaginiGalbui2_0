@@ -2617,13 +2617,14 @@ async def get_suspect_image(case_number: str, filename: str):
 
 @api_router.delete("/clear-database")
 async def clear_entire_database():
-    """Delete all data from the database (contacts, passwords, user_accounts, suspect_profiles) and uploaded images"""
+    """Delete all data from the database (contacts, passwords, user_accounts, suspect_profiles, whatsapp_groups) and uploaded images"""
     try:
         # Delete all collections
         contacts_result = await db.contacts.delete_many({})
         passwords_result = await db.passwords.delete_many({})
         accounts_result = await db.user_accounts.delete_many({})
         profiles_result = await db.suspect_profiles.delete_many({})
+        groups_result = await db.whatsapp_groups.delete_many({})
         
         # Delete all uploaded images
         uploads_dir = Path('/app/uploads')
@@ -2644,7 +2645,7 @@ async def clear_entire_database():
                     except Exception as e:
                         logger.error(f"Error deleting case directory {case_dir}: {str(e)}")
         
-        logger.info(f"Database cleared: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts, {profiles_result.deleted_count} suspect profiles, {deleted_images} images")
+        logger.info(f"Database cleared: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts, {profiles_result.deleted_count} suspect profiles, {groups_result.deleted_count} WhatsApp groups, {deleted_images} images")
         
         return {
             'success': True,
@@ -2652,8 +2653,9 @@ async def clear_entire_database():
             'passwords_deleted': passwords_result.deleted_count,
             'user_accounts_deleted': accounts_result.deleted_count,
             'suspect_profiles_deleted': profiles_result.deleted_count,
+            'whatsapp_groups_deleted': groups_result.deleted_count,
             'images_deleted': deleted_images,
-            'message': f'Successfully cleared entire database: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts, {profiles_result.deleted_count} suspect profiles, and {deleted_images} images deleted'
+            'message': f'Successfully cleared entire database: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts, {profiles_result.deleted_count} suspect profiles, {groups_result.deleted_count} WhatsApp groups, and {deleted_images} images deleted'
         }
         
     except Exception as e:
