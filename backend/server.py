@@ -1538,12 +1538,14 @@ async def get_stats():
     contacts_count = await db.contacts.count_documents({})
     passwords_count = await db.passwords.count_documents({})
     accounts_count = await db.user_accounts.count_documents({})
+    whatsapp_groups_count = await db.whatsapp_groups.count_documents({})
     
     return {
         'contacts': contacts_count,
         'passwords': passwords_count,
         'user_accounts': accounts_count,
-        'total': contacts_count + passwords_count + accounts_count
+        'whatsapp_groups': whatsapp_groups_count,
+        'total': contacts_count + passwords_count + accounts_count + whatsapp_groups_count
     }
 
 @api_router.get("/images/{file_path:path}")
