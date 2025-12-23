@@ -514,6 +514,60 @@ def parse_contacts_xml(xml_content: str) -> List[Dict[str, Any]]:
     
     return contacts
 
+def parse_whatsapp_groups_xml(xml_content: str) -> List[Dict[str, Any]]:
+    """Parse WhatsApp groups from Contacts.xml - groups are contacts with @g.us in user_id"""
+    groups = []
+    try:
+        root = ET.fromstring(xml_content)
+        ns = {'ns': 'http://pa.cellebrite.com/report/2.0'}
+        
+        for contact_model in root.findall('.//ns:model[@type="Contact"]', ns):
+            group_data = {}
+            
+            # Get source
+            source_field = contact_model.find('.//ns:field[@name="Source"]', ns)
+            source = source_field.find('ns:value', ns).text if source_field is not None and source_field.find('ns:value', ns) is not None else None
+            
+            # Get name
+            name_field = contact_model.find('.//ns:field[@name="Name"]', ns)
+            name = name_field.find('ns:value', ns).text if name_field is not None and name_field.find('ns:value', ns) is not None else None
+            
+            # Get user IDs to find WhatsApp group ID
+            user_id_models = contact_model.findall('.//ns:model[@type="UserID"]', ns)
+            extracted_user_id = None
+            for uid_model in user_id_models:
+                value_elem = uid_model.find('.//ns:field[@name="Value"]/ns:value', ns)
+                if value_elem is not None and value_elem.text:
+                    extracted_user_id = value_elem.text
+                    break
+            
+            # Check if this is a WhatsApp group (has @g.us in user_id)
+            if extracted_user_id and '@g.us' in extracted_user_id:
+                group_data['id'] = str(uuid.uuid4())
+                group_data['group_id'] = extracted_user_id  # e.g., "120363419157001598@g.us"
+                group_data['group_name'] = name or extracted_user_id
+                group_data['source'] = source or 'WhatsApp'
+                group_data['created_at'] = datetime.now(timezone.utc)
+                
+                # Extract photo path if available
+                photo_models = contact_model.findall('.//ns:model[@type="ContactPhoto"]', ns)
+                if photo_models:
+                    for photo_model in photo_models:
+                        local_path_elem = photo_model.find('.//ns:metadata[@section="File"]/ns:item[@name="Local Path"]', ns)
+                        if local_path_elem is not None and local_path_elem.text:
+                            photo_filename = local_path_elem.text.replace('\\', '/').split('/')[-1]
+                            group_data['photo_filename'] = photo_filename
+                            break
+                
+                groups.append(group_data)
+                logger.info(f"Found WhatsApp group: {group_data['group_name']} ({group_data['group_id']})")
+    
+    except Exception as e:
+        logger.error(f"Error parsing WhatsApp groups XML: {str(e)}")
+    
+    return groups
+
+
 def parse_passwords_xml(xml_content: str) -> List[Dict[str, Any]]:
     """Parse Passwords.xml from Cellebrite dump"""
     passwords = []
