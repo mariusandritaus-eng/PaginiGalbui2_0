@@ -195,6 +195,23 @@ class UserAccount(BaseModel):
     raw_data: Optional[Dict[str, Any]] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
+class WhatsAppGroup(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    group_id: str  # e.g., "120363419157001598@g.us"
+    group_name: str  # e.g., "Adina's baby"
+    source: Optional[str] = "WhatsApp"
+    case_number: Optional[str] = None
+    person_name: Optional[str] = None
+    device_info: Optional[str] = None
+    suspect_phone: Optional[str] = None
+    upload_session_id: Optional[str] = None
+    photo_path: Optional[str] = None  # Path to group photo
+    photo_filename: Optional[str] = None  # Original photo filename from XML
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class SuspectProfile(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
