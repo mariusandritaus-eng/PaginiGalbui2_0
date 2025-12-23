@@ -231,6 +231,7 @@ class UploadStats(BaseModel):
     contacts: int
     passwords: int
     user_accounts: int
+    whatsapp_groups: int = 0
     upload_time: datetime
 
 class SearchQuery(BaseModel):
