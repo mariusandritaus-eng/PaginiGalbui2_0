@@ -856,23 +856,47 @@ def upload_cellebrite_dump(
                         'upload_session_id': upload_session_id
                     })
                     
-                    # Photo Match Logic
-                    phone = contact_dict.get('phone', '')
-                    if phone:
-                        norm_phone = ''.join(c for c in phone if c.isdigit())
-                        if len(norm_phone) >= 6:
-                            matched_img = image_files.get(norm_phone)
-                            if not matched_img:
-                                for code in ['40', '1', '44', '33']:
-                                    if (code + norm_phone) in image_files:
-                                        matched_img = image_files[code + norm_phone]
-                                        break
-                            if matched_img:
-                                try:
-                                    img_name = f"{contact_dict.get('id', uuid.uuid4())}.jpg"
-                                    shutil.copy(matched_img, case_suspect_device_dir / img_name)
-                                    contact_dict['photo_path'] = f"/images/{safe_case}/{safe_person}/{safe_device}/{img_name}"
-                                except: pass
+                    # Photo Match Logic - Two strategies:
+                    # Strategy 1: Match by photo_filename from XML (exact match)
+                    matched_img = None
+                    photo_filename = contact_dict.get('photo_filename')
+                    if photo_filename:
+                        # Try exact match first (e.g., "40721208508-1482251074.thumb" or without extension)
+                        base_name = photo_filename.rsplit('.', 1)[0]  # Remove extension
+                        if base_name in image_by_full_name:
+                            matched_img = image_by_full_name[base_name]
+                            logger.info(f"Matched photo by XML filename: {photo_filename} -> {matched_img.name}")
+                    
+                    # Strategy 2: Match by phone number (fallback)
+                    if not matched_img:
+                        phone = contact_dict.get('phone', '')
+                        if phone:
+                            norm_phone = ''.join(c for c in phone if c.isdigit())
+                            if len(norm_phone) >= 6:
+                                # Try direct match
+                                matched_img = image_files.get(norm_phone)
+                                if not matched_img:
+                                    # Try with country code variations
+                                    for code in ['40', '1', '44', '33']:
+                                        if (code + norm_phone) in image_files:
+                                            matched_img = image_files[code + norm_phone]
+                                            break
+                                    # Try without leading 0
+                                    if not matched_img and norm_phone.startswith('0'):
+                                        matched_img = image_files.get(norm_phone[1:])
+                                
+                                if matched_img:
+                                    logger.info(f"Matched photo by phone: {norm_phone} -> {matched_img.name}")
+                    
+                    # Copy matched image
+                    if matched_img:
+                        try:
+                            img_name = f"{contact_dict.get('id', uuid.uuid4())}.jpg"
+                            shutil.copy(matched_img, case_suspect_device_dir / img_name)
+                            contact_dict['photo_path'] = f"/images/{safe_case}/{safe_person}/{safe_device}/{img_name}"
+                            logger.info(f"Copied image for contact: {contact_dict.get('name', 'Unknown')} -> {img_name}")
+                        except Exception as e:
+                            logger.error(f"Failed to copy image: {e}")
 
                     contact = Contact(**contact_dict)
                     doc = contact.model_dump()
