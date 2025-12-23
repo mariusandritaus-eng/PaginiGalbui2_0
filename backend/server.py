@@ -1494,6 +1494,7 @@ async def nuclear_wipe_database(secret_key: str = None):
             'passwords_deleted': 0,
             'user_accounts_deleted': 0,
             'suspect_profiles_deleted': 0,
+            'whatsapp_groups_deleted': 0,
             'timestamp': datetime.now(timezone.utc).isoformat()
         }
         
@@ -1510,11 +1511,15 @@ async def nuclear_wipe_database(secret_key: str = None):
         profiles_result = await db.suspect_profiles.delete_many({})
         result['suspect_profiles_deleted'] = profiles_result.deleted_count
         
+        groups_result = await db.whatsapp_groups.delete_many({})
+        result['whatsapp_groups_deleted'] = groups_result.deleted_count
+        
         total_deleted = sum([
             result['contacts_deleted'],
             result['passwords_deleted'],
             result['user_accounts_deleted'],
-            result['suspect_profiles_deleted']
+            result['suspect_profiles_deleted'],
+            result['whatsapp_groups_deleted']
         ])
         
         logger.critical(f"🔥 NUCLEAR WIPE COMPLETE - {total_deleted} total records deleted")
