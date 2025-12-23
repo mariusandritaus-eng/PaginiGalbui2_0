@@ -991,6 +991,52 @@ def upload_cellebrite_dump(
                 if batch_contacts:
                     sync_db.contacts.insert_many(batch_contacts)
                     stats['contacts'] = len(batch_contacts)
+            
+            # --- PROCESS WHATSAPP GROUPS ---
+            if contacts_file:
+                logger.info("Processing WhatsApp Groups...")
+                xml_content = contacts_file.read_text(encoding='utf-8')
+                groups_data = parse_whatsapp_groups_xml(xml_content)
+                
+                batch_groups = []
+                for group_dict in groups_data:
+                    group_dict.update({
+                        'case_number': case_number, 
+                        'person_name': person_name,
+                        'device_info': device_info, 
+                        'suspect_phone': suspect_phone,
+                        'upload_session_id': upload_session_id
+                    })
+                    
+                    # Photo Match Logic - same as contacts
+                    matched_img = None
+                    photo_filename = group_dict.get('photo_filename')
+                    if photo_filename and image_by_full_name:
+                        base_name = photo_filename.rsplit('.', 1)[0]
+                        if base_name in image_by_full_name:
+                            matched_img = image_by_full_name[base_name]
+                            logger.info(f"Matched group photo: {photo_filename} -> {matched_img.name}")
+                    
+                    # Copy matched image
+                    if matched_img:
+                        try:
+                            img_name = f"group_{group_dict.get('id', uuid.uuid4())}.jpg"
+                            shutil.copy(matched_img, case_suspect_device_dir / img_name)
+                            group_dict['photo_path'] = f"/images/{safe_case}/{safe_person}/{safe_device}/{img_name}"
+                            logger.info(f"Copied group image: {group_dict.get('group_name', 'Unknown')} -> {img_name}")
+                        except Exception as e:
+                            logger.error(f"Failed to copy group image: {e}")
+                    
+                    group = WhatsAppGroup(**group_dict)
+                    doc = group.model_dump()
+                    if doc.get('created_at'): 
+                        doc['created_at'] = doc['created_at'].replace(tzinfo=timezone.utc)
+                    batch_groups.append(doc)
+                
+                if batch_groups:
+                    sync_db.whatsapp_groups.insert_many(batch_groups)
+                    stats['whatsapp_groups'] = len(batch_groups)
+                    logger.info(f"Stored {len(batch_groups)} WhatsApp groups")
 
             # --- PROCESS PASSWORDS ---
             if passwords_file:
