@@ -2979,6 +2979,7 @@ async def delete_case(case_number: str):
         passwords_result = await db.passwords.delete_many({"case_number": case_number})
         accounts_result = await db.user_accounts.delete_many({"case_number": case_number})
         profiles_result = await db.suspect_profiles.delete_many({"case_number": case_number})
+        groups_result = await db.whatsapp_groups.delete_many({"case_number": case_number})
         
         # Delete images for this case
         deleted_images = 0
@@ -2989,7 +2990,7 @@ async def delete_case(case_number: str):
             # Count files deleted (approximate)
             deleted_images = contacts_result.deleted_count  # Rough estimate
         
-        logger.info(f"Case {case_number} deleted: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts, {profiles_result.deleted_count} suspect profiles")
+        logger.info(f"Case {case_number} deleted: {contacts_result.deleted_count} contacts, {passwords_result.deleted_count} passwords, {accounts_result.deleted_count} user accounts, {profiles_result.deleted_count} suspect profiles, {groups_result.deleted_count} WhatsApp groups")
         
         return {
             'success': True,
@@ -2998,6 +2999,7 @@ async def delete_case(case_number: str):
             'passwords_deleted': passwords_result.deleted_count,
             'user_accounts_deleted': accounts_result.deleted_count,
             'suspect_profiles_deleted': profiles_result.deleted_count,
+            'whatsapp_groups_deleted': groups_result.deleted_count,
             'images_deleted': deleted_images,
             'message': f'Successfully deleted case {case_number}'
         }
