@@ -818,13 +818,35 @@ def upload_cellebrite_dump(
                 xml_content = contacts_file.read_text(encoding='utf-8')
                 contacts_data = parse_contacts_xml(xml_content)
                 
-                # Image Indexing
+                # Image Indexing - Handle format: {phone}-{timestamp}.jpg
                 image_files = {}
-                for img_path in temp_path.rglob('*.j*'):
+                image_by_full_name = {}  # Map by complete filename for exact matching
+                
+                for img_path in temp_path.rglob('*'):
                     if img_path.is_file() and not img_path.name.endswith('.xml'):
-                        fname = img_path.stem
-                        norm = ''.join(c for c in fname if c.isdigit())
-                        if norm: image_files[norm] = img_path
+                        # Check if it's an image file (.jpg, .jpeg, .png, .thumb)
+                        if any(img_path.name.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.thumb']):
+                            # Store by full filename (for exact XML matches)
+                            # Remove extension, store base name
+                            base_name = img_path.stem  # e.g., "40721208508-1482251074"
+                            image_by_full_name[base_name] = img_path
+                            image_by_full_name[base_name + '.thumb'] = img_path  # Also map .thumb version
+                            
+                            fname = img_path.stem
+                            # Handle format: phone-timestamp (e.g., 40721208508-1482251074)
+                            if '-' in fname:
+                                phone_part = fname.split('-')[0]  # Extract phone number before hyphen
+                                # Normalize phone digits
+                                norm = ''.join(c for c in phone_part if c.isdigit())
+                                if norm and len(norm) >= 6:
+                                    image_files[norm] = img_path
+                                    logger.info(f"Indexed image: {img_path.name} -> phone key: {norm}")
+                            else:
+                                # Fallback: extract all digits (old logic)
+                                norm = ''.join(c for c in fname if c.isdigit())
+                                if norm: image_files[norm] = img_path
+                
+                logger.info(f"Total images indexed: {len(image_files)} by phone, {len(image_by_full_name)} by filename")
 
                 batch_contacts = []
                 for contact_dict in contacts_data:
