@@ -422,6 +422,21 @@ def parse_contacts_xml(xml_content: str) -> List[Dict[str, Any]]:
                 if name_value is not None:
                     contact_data['name'] = name_value.text
             
+            # Extract photo path from ContactPhoto model
+            photo_models = contact_model.findall('.//ns:model[@type="ContactPhoto"]', ns)
+            if photo_models:
+                for photo_model in photo_models:
+                    # Try to get Local Path from metadata
+                    local_path_elem = photo_model.find('.//ns:metadata[@section="File"]/ns:item[@name="Local Path"]', ns)
+                    if local_path_elem is not None and local_path_elem.text:
+                        # Local Path format: files\Image\40721208508-1482251074.thumb
+                        # Extract just the filename part
+                        photo_filename = local_path_elem.text.replace('\\', '/').split('/')[-1]
+                        # Store the filename (will be matched later during upload)
+                        contact_data['photo_filename'] = photo_filename
+                        logger.info(f"Found photo for contact: {photo_filename}")
+                        break
+            
             # Get phone numbers
             # For WhatsApp contacts, prioritize extracting phone from user_id
             # because user_id contains the actual WhatsApp phone number
