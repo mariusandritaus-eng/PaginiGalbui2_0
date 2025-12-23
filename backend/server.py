@@ -2125,111 +2125,42 @@ async def get_filters(data_type: str):
 
 @api_router.get("/whatsapp-groups")
 async def get_whatsapp_groups():
-    """Get all WhatsApp groups with member counts and details"""
+    """Get all WhatsApp groups from whatsapp_groups collection"""
     try:
-        # Get all contacts that have WhatsApp groups
-        contacts = await db.contacts.find(
-            {"whatsapp_groups": {"$exists": True, "$ne": None, "$ne": []}},
-            {"_id": 0, "id": 1, "name": 1, "phone": 1, "user_id": 1, "photo_path": 1, 
-             "whatsapp_groups": 1, "case_number": 1, "person_name": 1, "device_info": 1}
+        # Fetch all groups from the whatsapp_groups collection
+        groups = await db.whatsapp_groups.find(
+            {},
+            {"_id": 0}
         ).to_list(10000)
         
-        # Build a map of groups to members
-        groups_map = {}
-        
-        for contact in contacts:
-            contact_info = {
-                'id': contact.get('id'),
-                'name': contact.get('name'),
-                'phone': contact.get('phone'),
-                'user_id': contact.get('user_id'),
-                'photo_path': contact.get('photo_path'),
-                'case_number': contact.get('case_number'),
-                'person_name': contact.get('person_name'),
-                'device_info': contact.get('device_info')
-            }
-            
-            whatsapp_groups = contact.get('whatsapp_groups') or []
-            for group_str in whatsapp_groups:
-                if not group_str:
-                    continue
-                    
-                # Parse group string: "40765261003-1601966684@g.us Group Name"
-                if '@g.us' in group_str:
-                    parts = group_str.split(' ', 1)
-                    group_id = parts[0]
-                    group_name = parts[1] if len(parts) > 1 else group_id
-                    
-                    if group_id not in groups_map:
-                        groups_map[group_id] = {
-                            'group_id': group_id,
-                            'group_name': group_name,
-                            'members': [],
-                            'member_users_map': {},  # Map user_id to list of contact records
-                            'member_count': 0,
-                            'cases': set(),
-                            'devices': set()
-                        }
-                    
-                    # Smart deduplication: Track all sources per unique WhatsApp user_id
-                    # This is better than phone because multiple people can share a phone
-                    user_id = contact.get('user_id')
-                    if user_id:
-                        if user_id not in groups_map[group_id]['member_users_map']:
-                            groups_map[group_id]['member_users_map'][user_id] = []
-                        groups_map[group_id]['member_users_map'][user_id].append(contact_info)
-                    else:
-                        # No user_id - use phone as fallback
-                        phone = contact.get('phone')
-                        if phone:
-                            normalized_phone = normalize_phone(phone)
-                            unique_key = f"phone_{normalized_phone}"
-                        else:
-                            # No phone either - use name + device as identifier
-                            unique_key = f"no_id_{contact.get('name')}_{contact.get('device_info')}"
-                        
-                        if unique_key not in groups_map[group_id]['member_users_map']:
-                            groups_map[group_id]['member_users_map'][unique_key] = []
-                        groups_map[group_id]['member_users_map'][unique_key].append(contact_info)
-                    
-                    if contact.get('case_number'):
-                        groups_map[group_id]['cases'].add(contact.get('case_number'))
-                    if contact.get('device_info'):
-                        groups_map[group_id]['devices'].add(contact.get('device_info'))
-        
-        # Convert to list and calculate member counts
+        # Format groups for frontend
         groups_list = []
-        for group_id, group_data in groups_map.items():
-            # Convert member_users_map to members list with source info
-            members_with_sources = []
-            for user_id_or_key, contact_list in group_data['member_users_map'].items():
-                # Use the first contact as primary, but include source count and all sources
-                primary_contact = contact_list[0]
-                member_entry = {
-                    'id': primary_contact['id'],
-                    'name': primary_contact['name'],
-                    'phone': primary_contact['phone'],
-                    'user_id': primary_contact['user_id'],
-                    'photo_path': primary_contact['photo_path'],
-                    'case_number': primary_contact['case_number'],
-                    'person_name': primary_contact['person_name'],
-                    'device_info': primary_contact['device_info'],
-                    'source_count': len(contact_list),
-                    'all_sources': contact_list  # Include all source records
-                }
-                members_with_sources.append(member_entry)
+        for group in groups:
+            # Convert datetime if needed
+            if isinstance(group.get('created_at'), str):
+                group['created_at'] = datetime.fromisoformat(group['created_at'])
             
-            group_data['members'] = members_with_sources
-            group_data['member_count'] = len(members_with_sources)  # Unique member count
-            group_data['cases'] = list(group_data['cases'])
-            group_data['devices'] = list(group_data['devices'])
-            # Remove the temporary map
-            group_data.pop('member_users_map', None)
-            groups_list.append(group_data)
+            group_entry = {
+                'group_id': group.get('group_id'),
+                'group_name': group.get('group_name'),
+                'photo_path': group.get('photo_path'),
+                'case_number': group.get('case_number'),
+                'person_name': group.get('person_name'),
+                'device_info': group.get('device_info'),
+                'suspect_phone': group.get('suspect_phone'),
+                'source': group.get('source', 'WhatsApp'),
+                'created_at': group.get('created_at'),
+                'cases': [group.get('case_number')] if group.get('case_number') else [],
+                'devices': [group.get('device_info')] if group.get('device_info') else [],
+                'members': [],  # Will be populated when we have member data
+                'member_count': 0  # Will be calculated when we have member data
+            }
+            groups_list.append(group_entry)
         
-        # Sort by member count (descending)
-        groups_list.sort(key=lambda x: x['member_count'], reverse=True)
+        # Sort by group name
+        groups_list.sort(key=lambda x: x.get('group_name', ''))
         
+        logger.info(f"Returning {len(groups_list)} WhatsApp groups")
         return groups_list
         
     except Exception as e:
