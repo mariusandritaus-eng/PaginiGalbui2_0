@@ -2805,7 +2805,7 @@ function App() {
                               <li>Related contacts or alternate numbers stored together</li>
                               <li>Numbers from vCard or profile metadata</li>
                             </ul>
-                            These are <strong>not necessarily</strong> all owned by "{selectedContact.name}".
+                            These are <strong>not necessarily</strong> all owned by "{cleanDisplayName(selectedContact.name)}".
                           </div>
                         </div>
                       )}
