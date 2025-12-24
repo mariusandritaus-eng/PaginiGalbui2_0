@@ -288,7 +288,7 @@ function AdminPanel({ onClose }) {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setDeleteConfirm(session);
+                              setDeleteConfirm({ ...session, case_number: caseData.case_number });
                             }}
                             className="ml-4 p-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-lg transition-colors"
                             title="Delete this upload session"
