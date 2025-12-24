@@ -2703,7 +2703,7 @@ function App() {
                             "{identity.name || 'Unknown'}"
                           </div>
                           <Badge variant="outline" className="bg-amber-950 text-amber-300 border-amber-800 text-xs">
-                            {identity.source || 'Unknown Source'}
+                            {identity.source || 'Agenda Telefon'}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-xs mt-2">
