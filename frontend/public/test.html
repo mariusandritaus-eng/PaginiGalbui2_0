@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #004d00; }
+        .error { background: #4d0000; }
+        .info { background: #003d4d; }
+    </style>
+</head>
+<body>
+    <h1>Backend API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        async function testAPI() {
+            results.innerHTML += '<div class="info">Testing API connectivity...</div>';
+            
+            try {
+                // Test stats
+                results.innerHTML += '<div class="info">1. Testing /api/stats...</div>';
+                const statsRes = await fetch('/api/stats');
+                const stats = await statsRes.json();
+                results.innerHTML += `<div class="success">✅ Stats: ${stats.contacts} contacts, ${stats.passwords} passwords</div>`;
+                
+                // Test deduplicated contacts
+                results.innerHTML += '<div class="info">2. Testing /api/contacts/deduplicated...</div>';
+                const startTime = Date.now();
+                const contactsRes = await fetch('/api/contacts/deduplicated');
+                const contacts = await contactsRes.json();
+                const loadTime = Date.now() - startTime;
+                results.innerHTML += `<div class="success">✅ Loaded ${contacts.length} deduplicated contacts in ${loadTime}ms</div>`;
+                
+                // Show sample contact
+                if (contacts.length > 0) {
+                    const sample = contacts.find(c => c.device_count > 1) || contacts[0];
+                    results.innerHTML += `<div class="info">Sample contact: ${sample.name || 'No name'}<br>
+                        Phone: ${sample.phone}<br>
+                        Duplicate count: ${sample.duplicate_count}<br>
+                        Device count: ${sample.device_count || 1}<br>
+                        Devices: ${sample.devices ? sample.devices.join(', ') : 'N/A'}</div>`;
+                }
+                
+            } catch(error) {
+                results.innerHTML += `<div class="error">❌ Error: ${error.message}</div>`;
+                console.error('Error:', error);
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>
