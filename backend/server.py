@@ -2247,8 +2247,8 @@ async def get_contact_details(contact_id: str):
                 'group_name': group_name
             })
     
-    # Sort identities by case number and name
-    all_identities.sort(key=lambda x: (x.get('case_number', ''), x.get('name', '')))
+    # Sort identities by case number and name (handle None values)
+    all_identities.sort(key=lambda x: (x.get('case_number') or '', x.get('name') or ''))
     
     return {
         "main_contact": contact,
