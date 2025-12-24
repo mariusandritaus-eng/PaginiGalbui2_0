@@ -313,7 +313,11 @@ function App() {
       
       // For contacts with all_names array, search in all names
       if (dataType === 'contacts' && item.all_names && item.all_names.length > 0) {
-        const allNamesText = item.all_names.map(n => normalizeText(n)).join(' ');
+        const allNamesText = item.all_names.map(n => {
+          // Handle both old format (string) and new format (object)
+          const name = typeof n === 'string' ? n : (n.name || '');
+          return normalizeText(name);
+        }).join(' ');
         if (allNamesText.includes(searchTerm)) {
           return true;
         }
