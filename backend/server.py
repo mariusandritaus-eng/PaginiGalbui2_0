@@ -1060,14 +1060,39 @@ def upload_cellebrite_dump(
                         'upload_session_id': upload_session_id
                     })
                     
-                    # Photo Match Logic - same as contacts
+                    # Photo Match Logic - Multiple strategies (same as contacts)
                     matched_img = None
-                    photo_filename = group_dict.get('photo_filename')
-                    if photo_filename and image_by_full_name:
-                        base_name = photo_filename.rsplit('.', 1)[0]
-                        if base_name in image_by_full_name:
-                            matched_img = image_by_full_name[base_name]
-                            logger.info(f"Matched group photo: {photo_filename} -> {matched_img.name}")
+                    
+                    # Strategy 1: Match by extracted_path
+                    extracted_path = group_dict.get('photo_extracted_path')
+                    if extracted_path and image_by_path and extracted_path in image_by_path:
+                        matched_img = image_by_path[extracted_path]
+                    
+                    # Strategy 2: Match by filename
+                    if not matched_img:
+                        photo_filename = group_dict.get('photo_filename')
+                        if photo_filename and image_by_full_name:
+                            if photo_filename in image_by_full_name:
+                                matched_img = image_by_full_name[photo_filename]
+                            else:
+                                base_name = photo_filename.rsplit('.', 1)[0]
+                                if base_name in image_by_full_name:
+                                    matched_img = image_by_full_name[base_name]
+                    
+                    # Strategy 3: Match by local_path
+                    if not matched_img:
+                        local_path = group_dict.get('photo_local_path')
+                        if local_path and image_by_path and local_path in image_by_path:
+                            matched_img = image_by_path[local_path]
+                    
+                    # Strategy 4: Match by group_id for WhatsApp groups
+                    if not matched_img:
+                        group_id = group_dict.get('group_id', '')
+                        if group_id and image_files:
+                            # Try matching by group ID digits
+                            norm_id = ''.join(c for c in group_id.split('@')[0] if c.isdigit())
+                            if norm_id in image_files:
+                                matched_img = image_files[norm_id]
                     
                     # Copy matched image
                     if matched_img:
