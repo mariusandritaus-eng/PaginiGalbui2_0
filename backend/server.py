@@ -2859,18 +2859,34 @@ async def admin_login(credentials: dict):
 
 @api_router.get("/admin/cases")
 async def get_all_cases():
-    """Get all cases with their upload sessions (grouped by person + device)"""
+    """Get all cases with their upload sessions"""
     try:
-        # Get all suspect profiles which represent upload sessions
-        suspects = await db.suspect_profiles.find({}, {"_id": 0}).to_list(1000)
+        # Get all unique cases from contacts, passwords, and user_accounts
+        contacts_pipeline = [
+            {"$group": {
+                "_id": {
+                    "case_number": "$case_number",
+                    "person_name": "$person_name",
+                    "device_info": "$device_info",
+                    "upload_session_id": "$upload_session_id"
+                }
+            }}
+        ]
         
-        # Group by case number
+        contact_sessions = await db.contacts.aggregate(contacts_pipeline).to_list(1000)
+        
+        # Build cases map
         cases_map = {}
         
-        for suspect in suspects:
-            case = suspect.get('case_number')
+        for session_doc in contact_sessions:
+            session_info = session_doc['_id']
+            case = session_info.get('case_number')
             if not case:
                 continue
+            
+            person_name = session_info.get('person_name')
+            device = session_info.get('device_info')
+            upload_session_id = session_info.get('upload_session_id')
             
             if case not in cases_map:
                 cases_map[case] = {
@@ -2878,12 +2894,7 @@ async def get_all_cases():
                     'sessions': []
                 }
             
-            # Use person_name (which is actually used in contacts/passwords/accounts)
-            person_name = suspect.get('person_name') or suspect.get('suspect_name')
-            device = suspect.get('device_info')
-            upload_session_id = suspect.get('upload_session_id')
-            
-            # Count records for this specific upload session if available
+            # Count records for this session
             if upload_session_id:
                 contacts_count = await db.contacts.count_documents({
                     "upload_session_id": upload_session_id
@@ -2897,7 +2908,6 @@ async def get_all_cases():
                     "upload_session_id": upload_session_id
                 })
             else:
-                # Fallback for old uploads without upload_session_id
                 contacts_count = await db.contacts.count_documents({
                     "case_number": case,
                     "person_name": person_name,
@@ -2916,9 +2926,13 @@ async def get_all_cases():
                     "device_info": device
                 })
             
-            # Create session object with upload_session_id for precise tracking
+            # Get suspect profile if it exists
+            suspect_profile = await db.suspect_profiles.find_one({
+                "upload_session_id": upload_session_id
+            }, {"_id": 0, "id": 1, "created_at": 1})
+            
             session = {
-                'session_id': upload_session_id or f"{case}_{person_name}_{device}_{suspect.get('created_at', '')}",
+                'session_id': upload_session_id or f"{case}_{person_name}_{device}",
                 'upload_session_id': upload_session_id,
                 'person_name': person_name,
                 'device_info': device,
@@ -2926,8 +2940,8 @@ async def get_all_cases():
                 'passwords': passwords_count,
                 'user_accounts': accounts_count,
                 'total': contacts_count + passwords_count + accounts_count,
-                'uploaded_at': suspect.get('created_at', 'Unknown'),
-                'profile_id': suspect.get('id', '')
+                'uploaded_at': suspect_profile.get('created_at') if suspect_profile else None,
+                'profile_id': suspect_profile.get('id') if suspect_profile else None
             }
             
             cases_map[case]['sessions'].append(session)
