@@ -2790,6 +2790,25 @@ function App() {
                   {/* XML Sub-Models (PhoneNumber, Email, UserID, etc.) */}
                   {selectedContact.raw_data.models && Object.keys(selectedContact.raw_data.models).length > 0 && (
                     <div className="space-y-3">
+                      {/* Info box for PhoneNumber section */}
+                      {selectedContact.raw_data.models.PhoneNumber && selectedContact.raw_data.models.PhoneNumber.length > 1 && (
+                        <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg p-3 flex items-start gap-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="text-xs text-blue-300">
+                            <strong>Why multiple phone numbers?</strong> The XML data below shows all phone numbers found in this contact's raw data. 
+                            Additional numbers (beyond the primary number <span className="font-mono bg-blue-900/40 px-1 rounded">{selectedContact.phone}</span>) may include:
+                            <ul className="mt-1 ml-4 list-disc space-y-0.5">
+                              <li>Phone numbers from WhatsApp group members</li>
+                              <li>Related contacts or alternate numbers stored together</li>
+                              <li>Numbers from vCard or profile metadata</li>
+                            </ul>
+                            These are <strong>not necessarily</strong> all owned by "{selectedContact.name}".
+                          </div>
+                        </div>
+                      )}
+                      
                       {Object.entries(selectedContact.raw_data.models).map(([modelType, modelArray]) => (
                         <div key={modelType} className="bg-neutral-800/50 p-4 rounded">
                           <h5 className="text-neutral-400 text-xs mb-2 uppercase">{modelType} ({modelArray.length})</h5>
