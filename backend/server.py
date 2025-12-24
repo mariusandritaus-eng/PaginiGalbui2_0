@@ -2133,13 +2133,60 @@ async def get_filters(data_type: str):
 
 @api_router.get("/whatsapp-groups")
 async def get_whatsapp_groups():
-    """Get all WhatsApp groups from whatsapp_groups collection"""
+    """Get all WhatsApp groups from whatsapp_groups collection with members"""
     try:
         # Fetch all groups from the whatsapp_groups collection
         groups = await db.whatsapp_groups.find(
             {},
             {"_id": 0}
         ).to_list(10000)
+        
+        # Fetch all contacts that have whatsapp_groups to find members
+        contacts_with_groups = await db.contacts.find(
+            {"whatsapp_groups": {"$exists": True, "$ne": []}},
+            {"_id": 0, "id": 1, "name": 1, "phone": 1, "photo_path": 1, "person_name": 1, 
+             "case_number": 1, "device_info": 1, "whatsapp_groups": 1}
+        ).to_list(100000)
+        
+        # Build a mapping of group_id -> group_name from contacts' whatsapp_groups
+        # Format in contacts: "120363212727307534@g.us BLOC DE BAȘTINĂ (bdb)"
+        group_names_from_contacts = {}
+        for contact in contacts_with_groups:
+            for group_str in (contact.get('whatsapp_groups') or []):
+                if '@g.us' in group_str:
+                    parts = group_str.split('@g.us', 1)
+                    if len(parts) == 2:
+                        group_id = parts[0] + '@g.us'
+                        group_name = parts[1].strip()
+                        if group_name and group_id not in group_names_from_contacts:
+                            group_names_from_contacts[group_id] = group_name
+        
+        # Build a mapping of group_id -> members
+        group_members = {}
+        for contact in contacts_with_groups:
+            for group_str in (contact.get('whatsapp_groups') or []):
+                if '@g.us' in group_str:
+                    parts = group_str.split('@g.us', 1)
+                    group_id = parts[0] + '@g.us'
+                    
+                    if group_id not in group_members:
+                        group_members[group_id] = []
+                    
+                    # Add member info
+                    member_info = {
+                        'id': contact.get('id'),
+                        'name': contact.get('name'),
+                        'phone': contact.get('phone'),
+                        'photo_path': contact.get('photo_path'),
+                        'person_name': contact.get('person_name'),
+                        'case_number': contact.get('case_number'),
+                        'device_info': contact.get('device_info')
+                    }
+                    
+                    # Avoid duplicates (same phone in same group)
+                    existing_phones = [m.get('phone') for m in group_members[group_id]]
+                    if contact.get('phone') not in existing_phones:
+                        group_members[group_id].append(member_info)
         
         # Format groups for frontend
         groups_list = []
@@ -2148,9 +2195,29 @@ async def get_whatsapp_groups():
             if isinstance(group.get('created_at'), str):
                 group['created_at'] = datetime.fromisoformat(group['created_at'])
             
+            group_id = group.get('group_id')
+            group_name = group.get('group_name')
+            
+            # If group_name is just the group_id (no real name), try to get it from contacts
+            if group_name and group_name == group_id:
+                if group_id in group_names_from_contacts:
+                    group_name = group_names_from_contacts[group_id]
+            
+            # Get members for this group
+            members = group_members.get(group_id, [])
+            
+            # Collect unique cases and devices from members
+            cases = set([group.get('case_number')] if group.get('case_number') else [])
+            devices = set([group.get('device_info')] if group.get('device_info') else [])
+            for member in members:
+                if member.get('case_number'):
+                    cases.add(member['case_number'])
+                if member.get('device_info'):
+                    devices.add(member['device_info'])
+            
             group_entry = {
-                'group_id': group.get('group_id'),
-                'group_name': group.get('group_name'),
+                'group_id': group_id,
+                'group_name': group_name,
                 'photo_path': group.get('photo_path'),
                 'case_number': group.get('case_number'),
                 'person_name': group.get('person_name'),
@@ -2158,17 +2225,24 @@ async def get_whatsapp_groups():
                 'suspect_phone': group.get('suspect_phone'),
                 'source': group.get('source', 'WhatsApp'),
                 'created_at': group.get('created_at'),
-                'cases': [group.get('case_number')] if group.get('case_number') else [],
-                'devices': [group.get('device_info')] if group.get('device_info') else [],
-                'members': [],  # Will be populated when we have member data
-                'member_count': 0  # Will be calculated when we have member data
+                'cases': list(cases),
+                'devices': list(devices),
+                'members': members,
+                'member_count': len(members)
             }
             groups_list.append(group_entry)
         
-        # Sort by group name
-        groups_list.sort(key=lambda x: x.get('group_name', ''))
+        # Sort by group name (put groups with real names first, then those with just IDs)
+        def sort_key(x):
+            name = x.get('group_name', '')
+            # Groups with @g.us in name are unnamed, sort them last
+            if '@g.us' in name:
+                return (1, name)
+            return (0, name.lower())
         
-        logger.info(f"Returning {len(groups_list)} WhatsApp groups")
+        groups_list.sort(key=sort_key)
+        
+        logger.info(f"Returning {len(groups_list)} WhatsApp groups with members")
         return groups_list
         
     except Exception as e:
