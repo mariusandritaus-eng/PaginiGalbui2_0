@@ -916,35 +916,49 @@ def upload_cellebrite_dump(
                 xml_content = contacts_file.read_text(encoding='utf-8')
                 contacts_data = parse_contacts_xml(xml_content)
                 
-                # Image Indexing - Handle format: {phone}-{timestamp}.jpg
+                # Image Indexing - Handle multiple formats:
+                # iOS: files/Image/{phone}-{timestamp}.jpg or .thumb
+                # Android: contacts/Source/ID/{phone}.j or files/Image/{phone}.j
                 image_files = {}
                 image_by_full_name = {}  # Map by complete filename for exact matching
+                image_by_path = {}  # Map by relative path for extracted_path matching
                 
                 for img_path in temp_path.rglob('*'):
                     if img_path.is_file() and not img_path.name.endswith('.xml'):
-                        # Check if it's an image file (.jpg, .jpeg, .png, .thumb)
-                        if any(img_path.name.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.thumb']):
+                        # Check if it's an image file (.jpg, .jpeg, .png, .thumb, .j)
+                        if any(img_path.name.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.thumb', '.j']):
                             # Store by full filename (for exact XML matches)
-                            # Remove extension, store base name
-                            base_name = img_path.stem  # e.g., "40721208508-1482251074"
+                            base_name = img_path.stem  # e.g., "40721208508-1482251074" or "40743143693@s.whatsapp.net"
                             image_by_full_name[base_name] = img_path
-                            image_by_full_name[base_name + '.thumb'] = img_path  # Also map .thumb version
+                            image_by_full_name[img_path.name] = img_path  # Also map with extension
+                            
+                            # Store relative path for extracted_path matching
+                            try:
+                                rel_path = str(img_path.relative_to(temp_path))
+                                image_by_path[rel_path.replace('\\', '/')] = img_path
+                            except:
+                                pass
                             
                             fname = img_path.stem
-                            # Handle format: phone-timestamp (e.g., 40721208508-1482251074)
-                            if '-' in fname:
-                                phone_part = fname.split('-')[0]  # Extract phone number before hyphen
-                                # Normalize phone digits
+                            # Handle format 1: phone-timestamp (iOS: 40721208508-1482251074)
+                            if '-' in fname and '@' not in fname:
+                                phone_part = fname.split('-')[0]
                                 norm = ''.join(c for c in phone_part if c.isdigit())
                                 if norm and len(norm) >= 6:
                                     image_files[norm] = img_path
-                                    logger.info(f"Indexed image: {img_path.name} -> phone key: {norm}")
+                            # Handle format 2: WhatsApp ID (Android: 40743143693@s.whatsapp.net)
+                            elif '@s.whatsapp.net' in fname or '@g.us' in fname:
+                                phone_part = fname.split('@')[0]
+                                norm = ''.join(c for c in phone_part if c.isdigit())
+                                if norm and len(norm) >= 6:
+                                    image_files[norm] = img_path
                             else:
-                                # Fallback: extract all digits (old logic)
+                                # Fallback: extract all digits
                                 norm = ''.join(c for c in fname if c.isdigit())
-                                if norm: image_files[norm] = img_path
+                                if norm and len(norm) >= 6:
+                                    image_files[norm] = img_path
                 
-                logger.info(f"Total images indexed: {len(image_files)} by phone, {len(image_by_full_name)} by filename")
+                logger.info(f"Total images indexed: {len(image_files)} by phone, {len(image_by_full_name)} by filename, {len(image_by_path)} by path")
 
                 batch_contacts = []
                 for contact_dict in contacts_data:
