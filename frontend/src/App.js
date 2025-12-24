@@ -3196,7 +3196,7 @@ function App() {
                             <div className="flex items-center justify-between">
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <p className="text-white font-medium">{member.name || 'Unknown'}</p>
+                                  <p className="text-white font-medium">{cleanDisplayName(member.name) || 'Unknown'}</p>
                                   {member.source_count > 1 && (
                                     <span className="px-2 py-0.5 bg-amber-600/20 text-amber-400 text-xs rounded-full border border-amber-600/30">
                                       {member.source_count} sources
