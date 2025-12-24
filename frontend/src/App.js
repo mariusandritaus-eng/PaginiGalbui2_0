@@ -1297,9 +1297,16 @@ function App() {
                             <TableCell className="text-neutral-300 text-xs">{contact.device_info || '-'}</TableCell>
                             <TableCell>
                               {contact.duplicate_count > 1 && (
-                                <Badge variant="outline" className="bg-amber-950 text-amber-300 border-amber-800">
-                                  {contact.duplicate_count}
-                                </Badge>
+                                <div className="space-y-1">
+                                  <Badge variant="outline" className="bg-amber-950 text-amber-300 border-amber-800">
+                                    {contact.duplicate_count} records
+                                  </Badge>
+                                  {contact.device_count > 1 && (
+                                    <Badge variant="outline" className="bg-red-950 text-red-300 border-red-800 text-xs">
+                                      {contact.device_count} devices
+                                    </Badge>
+                                  )}
+                                </div>
                               )}
                             </TableCell>
                           </TableRow>
