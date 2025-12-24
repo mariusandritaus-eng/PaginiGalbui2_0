@@ -2222,7 +2222,7 @@ async def get_contact_details(contact_id: str):
                         'case_number': c.get('case_number'),
                         'suspect_name': c.get('person_name'),
                         'device': c.get('device_info'),
-                        'source': c.get('source'),
+                        'source': c.get('source') or 'Agenda Telefon',  # Default to "Agenda Telefon" if empty
                         'upload_session_id': c.get('upload_session_id'),
                         'added_at': c.get('created_at')
                     }
