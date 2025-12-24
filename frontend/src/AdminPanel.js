@@ -202,26 +202,6 @@ function AdminPanel({ onClose }) {
             <div className="text-center py-12 text-neutral-400">No cases found in database</div>
           ) : (
             <>
-              {/* Cleanup Button */}
-              <div className="mb-4 p-4 bg-amber-900/20 border border-amber-800/50 rounded-lg">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h4 className="text-amber-400 font-semibold mb-1">Database Cleanup</h4>
-                    <p className="text-neutral-400 text-sm">
-                      Remove WhatsApp groups that were incorrectly added as contacts. 
-                      This fixes issues like "+40764657279" having hundreds of different names.
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleCleanupGroups}
-                    disabled={cleaningUp}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:bg-neutral-700 text-white rounded-lg transition-colors whitespace-nowrap"
-                  >
-                    {cleaningUp ? 'Cleaning...' : 'Cleanup Groups'}
-                  </button>
-                </div>
-              </div>
-
               <div className="space-y-4">
               {cases.map((caseData) => (
                 <div
