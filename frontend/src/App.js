@@ -1229,7 +1229,29 @@ function App() {
                                 {contact.name || '-'}
                                 {contact.all_names && contact.all_names.length > 1 && (
                                   <div className="text-xs text-neutral-400 mt-1">
-                                    Also known as: {contact.all_names.filter(n => n !== contact.name).join(', ')}
+                                    <div className="font-semibold text-amber-400 mb-1">Name variations across devices:</div>
+                                    {contact.all_names.map((nameEntry, idx) => {
+                                      // Handle both old format (string) and new format (object)
+                                      const displayName = typeof nameEntry === 'string' ? nameEntry : nameEntry.name;
+                                      const device = typeof nameEntry === 'object' ? nameEntry.device : null;
+                                      const caseNum = typeof nameEntry === 'object' ? nameEntry.case : null;
+                                      const source = typeof nameEntry === 'object' ? nameEntry.source : null;
+                                      
+                                      if (displayName === contact.name) return null; // Skip the main name
+                                      
+                                      return (
+                                        <div key={idx} className="ml-2 mb-1">
+                                          • "{displayName}"
+                                          {device && <span className="text-neutral-500"> on {device}</span>}
+                                          {source && <span className="text-neutral-500"> ({source})</span>}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                {contact.device_count > 1 && (
+                                  <div className="text-xs text-amber-400 mt-2">
+                                    ⚠️ Found in {contact.device_count} different devices
                                   </div>
                                 )}
                               </div>
