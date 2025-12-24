@@ -3307,6 +3307,31 @@ async def cleanup_groups_from_contacts():
         logger.error(f"Error cleaning up groups: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@api_router.post("/admin/cleanup-newsletters")
+async def cleanup_newsletters_from_contacts():
+    """Remove WhatsApp newsletters/channels that were incorrectly added to contacts"""
+    try:
+        # Find and delete contacts where user_id contains @newsletter
+        result = await db.contacts.delete_many({
+            "$or": [
+                {"user_id": {"$regex": "@newsletter"}},
+                {"phone": {"$regex": "@newsletter"}}
+            ]
+        })
+        
+        logger.info(f"Cleaned up {result.deleted_count} newsletter records from contacts")
+        
+        return {
+            'success': True,
+            'deleted_count': result.deleted_count,
+            'message': f'Removed {result.deleted_count} WhatsApp newsletters/channels from contacts'
+        }
+        
+    except Exception as e:
+        logger.error(f"Error cleaning up newsletters: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.delete("/admin/cases/{case_number}")
 async def delete_case(case_number: str):
     """Delete a specific case and all its related data"""
