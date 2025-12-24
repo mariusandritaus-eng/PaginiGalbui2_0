@@ -2809,28 +2809,6 @@ function App() {
                   )}
                 </div>
               )}
-              
-              {/* Duplicates */}
-              {contactDetails.total_duplicates > 1 && (
-                <div className="border-t border-neutral-800 pt-4">
-                  <h4 className="text-neutral-400 text-sm mb-2">
-                    Duplicate Records ({contactDetails.total_duplicates})
-                  </h4>
-                  <div className="space-y-2">
-                    {contactDetails.all_records.map((record, idx) => (
-                      <div key={idx} className="bg-neutral-800/50 p-3 rounded text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-white">{record.name}</span>
-                          <span className="text-neutral-400">{record.source}</span>
-                        </div>
-                        <div className="text-neutral-500 mt-1">
-                          Device: {record.device_info} | Case: {record.case_number}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </DialogContent>
