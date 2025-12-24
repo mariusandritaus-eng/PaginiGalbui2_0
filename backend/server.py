@@ -440,10 +440,29 @@ def parse_contacts_xml(xml_content: str) -> List[Dict[str, Any]]:
                 if field.get('name') == 'Name':
                     name_value = field.find('ns:value', ns)
                     if name_value is not None and name_value.text:
-                        # Validate this is a real name, not a photo filename
-                        name_text = name_value.text
-                        # Skip if it looks like a photo filename (contains .thumb, .jpg, .j and has phone-timestamp pattern)
-                        if not any(ext in name_text for ext in ['.thumb', '.jpg', '.jpeg', '.png', '.j']) and not (len(name_text) > 10 and '-' in name_text and name_text.split('-')[0].isdigit()):
+                        # Validate this is a real name, not a photo filename or encoded placeholder
+                        name_text = name_value.text.strip()
+                        
+                        # Skip invalid names:
+                        # 1. Photo filenames (.thumb, .jpg, .j, etc.)
+                        # 2. Base64 encoded placeholders (+EAA=, +EAB=, etc.)
+                        # 3. Phone-timestamp patterns (40721208508-1482251074)
+                        is_invalid = False
+                        
+                        # Check for photo filename patterns
+                        if any(ext in name_text for ext in ['.thumb', '.jpg', '.jpeg', '.png', '.j']):
+                            is_invalid = True
+                        # Check for phone-timestamp pattern
+                        elif len(name_text) > 10 and '-' in name_text and name_text.split('-')[0].isdigit():
+                            is_invalid = True
+                        # Check for base64 encoded placeholders (like +EAA=, +EAB=, etc.)
+                        elif name_text.startswith('+') and '=' in name_text and len(name_text) < 10:
+                            is_invalid = True
+                        # Check for just "+" or empty-ish values
+                        elif name_text in ['+', '-', 'null', 'None', '']:
+                            is_invalid = True
+                        
+                        if not is_invalid:
                             contact_data['name'] = name_text
                     break
             
