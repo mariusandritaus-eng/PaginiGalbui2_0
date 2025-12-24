@@ -1811,11 +1811,43 @@ function App() {
           </TabsContent>
 
           <TabsContent value="whatsapp-groups" className="space-y-4">
-            {selectedCase && (
+            {/* Active Filters Bar */}
+            {(selectedCase || Object.entries(filters.whatsapp_groups).some(([k, v]) => v !== "all")) && (
               <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-neutral-400 text-sm">Case:</span>
-                  <Badge className="bg-amber-500 text-black font-semibold">{selectedCase}</Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-neutral-400 text-sm">Active Filters:</span>
+                  {selectedCase && (
+                    <Badge className="bg-amber-500 text-black font-semibold flex items-center gap-1">
+                      Case: {selectedCase}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCase("")} />
+                    </Badge>
+                  )}
+                  {filters.whatsapp_groups.device !== "all" && (
+                    <Badge className="bg-green-500 text-white flex items-center gap-1">
+                      Device: {filters.whatsapp_groups.device}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, whatsapp_groups: {...prev.whatsapp_groups, device: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.whatsapp_groups.suspect !== "all" && (
+                    <Badge className="bg-orange-500 text-white flex items-center gap-1">
+                      Suspect: {filters.whatsapp_groups.suspect}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, whatsapp_groups: {...prev.whatsapp_groups, suspect: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.whatsapp_groups.case !== "all" && (
+                    <Badge className="bg-cyan-500 text-white flex items-center gap-1">
+                      Case Filter: {filters.whatsapp_groups.case}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, whatsapp_groups: {...prev.whatsapp_groups, case: "all"}}))} />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { clearFilters('whatsapp_groups'); setSelectedCase(""); }}
+                    className="text-neutral-400 hover:text-white text-xs ml-2"
+                  >
+                    Clear All
+                  </Button>
                 </div>
               </div>
             )}
