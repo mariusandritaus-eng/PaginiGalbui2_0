@@ -466,7 +466,12 @@ function App() {
     if (!currentFilters) return data;
     
     return data.filter(item => {
-      if (currentFilters.source && currentFilters.source !== "all" && item.source !== currentFilters.source) return false;
+      // Source filter: check both 'source' field and 'sources' array
+      if (currentFilters.source && currentFilters.source !== "all") {
+        const matchesSource = item.source === currentFilters.source || 
+                             (item.sources && Array.isArray(item.sources) && item.sources.includes(currentFilters.source));
+        if (!matchesSource) return false;
+      }
       if (currentFilters.category && currentFilters.category !== "all" && item.category !== currentFilters.category) return false;
       if (currentFilters.application && currentFilters.application !== "all") {
         // Check multiple fields for application match
