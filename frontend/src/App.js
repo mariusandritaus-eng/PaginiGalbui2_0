@@ -117,20 +117,29 @@ function App() {
   }, [searchParams]);
 
   const loadData = async (useDedup = true) => {
+    setLoading(true);
     try {
       const contactsEndpoint = useDedup ? `${API}/contacts/deduplicated` : `${API}/contacts`;
       const credentialsEndpoint = useDedup ? `${API}/credentials/deduplicated` : `${API}/passwords`;
       
+      console.log('Loading data from backend...');
+      const startTime = Date.now();
+      
       const [contactsRes, credentialsRes] = await Promise.all([
-        axios.get(contactsEndpoint),
-        axios.get(credentialsEndpoint)
+        axios.get(contactsEndpoint, { timeout: 30000 }),
+        axios.get(credentialsEndpoint, { timeout: 30000 })
       ]);
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`Data loaded in ${loadTime}ms - Contacts: ${contactsRes.data.length}, Credentials: ${credentialsRes.data.length}`);
       
       setContacts(contactsRes.data);
       setCredentials(credentialsRes.data);
     } catch (error) {
       console.error("Error loading data:", error);
-      toast.error("Failed to load data");
+      toast.error("Failed to load data: " + (error.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
     }
   };
 
