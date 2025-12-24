@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Upload, Search, Database, Users, Key, Shield, Filter, X, ChevronDown, ChevronRight, MessageCircle, Download, Instagram, Facebook, Twitter, Send, Music, Share2, Mail, Eye, Home } from "lucide-react";
+import { cleanDisplayName } from "@/lib/utils";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = BACKEND_URL;
