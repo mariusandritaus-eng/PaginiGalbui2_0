@@ -2014,11 +2014,23 @@ function App() {
           </TabsContent>
 
           <TabsContent value="suspects" className="space-y-4">
+            {/* Active Filters Bar */}
             {selectedCase && (
               <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-neutral-400 text-sm">Case:</span>
-                  <Badge className="bg-amber-500 text-black font-semibold">{selectedCase}</Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-neutral-400 text-sm">Active Filters:</span>
+                  <Badge className="bg-amber-500 text-black font-semibold flex items-center gap-1">
+                    Case: {selectedCase}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCase("")} />
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedCase("")}
+                    className="text-neutral-400 hover:text-white text-xs ml-2"
+                  >
+                    Clear All
+                  </Button>
                 </div>
               </div>
             )}
