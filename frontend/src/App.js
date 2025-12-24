@@ -1199,6 +1199,15 @@ function App() {
                             </div>
                           </TableCell>
                         </TableRow>
+                      ) : loading ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-12 text-neutral-400">
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-400"></div>
+                              <span>Loading contacts...</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       ) : filteredContacts.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={8} className="text-center py-8 text-neutral-500">
