@@ -1008,7 +1008,7 @@ function App() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-6 gap-3">
                   <div>
                     <Label className="text-neutral-400 text-xs">Source</Label>
                     <Select
@@ -1090,6 +1090,46 @@ function App() {
                         {dynamicContactFilters.suspects.map(s => (
                           <SelectItem key={s} value={s}>{s} ({dynamicContactFilters.counts.suspects[s] || 0})</SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-neutral-400 text-xs">Has Name</Label>
+                    <Select
+                      key={`hasName-${filters.contacts.hasName}`}
+                      value={filters.contacts.hasName}
+                      onValueChange={(value) => setFilters(prev => ({
+                        ...prev,
+                        contacts: { ...prev.contacts, hasName: value }
+                      }))}
+                    >
+                      <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="yes">With Name</SelectItem>
+                        <SelectItem value="no">No Name</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-neutral-400 text-xs">Has Photo</Label>
+                    <Select
+                      key={`hasPhoto-${filters.contacts.hasPhoto}`}
+                      value={filters.contacts.hasPhoto}
+                      onValueChange={(value) => setFilters(prev => ({
+                        ...prev,
+                        contacts: { ...prev.contacts, hasPhoto: value }
+                      }))}
+                    >
+                      <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white text-xs">
+                        <SelectValue placeholder="All" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="yes">With Photo</SelectItem>
+                        <SelectItem value="no">No Photo</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
