@@ -339,18 +339,41 @@ def extract_device_from_xml(xml_content: str) -> str:
             elif item_name == 'DeviceInfoSelectedDeviceName' and item.text:
                 device_name = item.text.strip()
         
+        # Check if device_name is a generic extraction type (not actual device model)
+        generic_names = ['APPLE_IOS_FULL_FILE_SYSTEM', 'APPLE_IOS_GRAYKEY', 'ANDROID_FULL_FILE_SYSTEM']
+        is_generic = any(generic in device_name for generic in generic_names)
+        
+        # If it's a generic name, try to get more specific info from extractionInfo or project name
+        if is_generic:
+            # Try extractionInfo deviceName
+            extraction_info = root.find('.//{http://pa.cellebrite.com/report/2.0}extractionInfo')
+            if extraction_info is not None:
+                extraction_device = extraction_info.get('deviceName', '')
+                if extraction_device and extraction_device not in generic_names:
+                    device_name = extraction_device
+            
+            # If still generic, use project name as fallback
+            if is_generic or not device_name:
+                project_name = root.get('name', '')
+                if project_name and project_name != device_name:
+                    # Use project name (e.g., "Raport_iPhone")
+                    return project_name.replace('_', ' ').replace('Raport ', '')
+        
         # Combine manufacturer and device name (e.g., "Samsung SM-G991B")
-        if manufacturer and device_name:
+        if manufacturer and device_name and not is_generic:
             return f"{manufacturer.capitalize()} {device_name}"
-        elif device_name:
+        elif device_name and not is_generic:
             return device_name
         elif manufacturer:
+            # For Apple devices with generic extraction type
+            if manufacturer.lower() == 'apple':
+                return 'Apple iPhone'
             return manufacturer.capitalize()
         
-        # Fallback to project name
+        # Final fallback to project name
         project_name = root.get('name', '')
         if project_name:
-            return project_name
+            return project_name.replace('_', ' ').replace('Raport ', '')
             
     except Exception as e:
         logger.error(f"Error extracting device info: {str(e)}")
