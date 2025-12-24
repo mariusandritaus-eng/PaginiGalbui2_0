@@ -433,12 +433,19 @@ def parse_contacts_xml(xml_content: str) -> List[Dict[str, Any]]:
                 if account_value is not None:
                     contact_data['account'] = account_value.text
             
-            # Get name
-            name_field = contact_model.find('.//ns:field[@name="Name"]', ns)
-            if name_field is not None:
-                name_value = name_field.find('ns:value', ns)
-                if name_value is not None:
-                    contact_data['name'] = name_value.text
+            # Get name - IMPORTANT: Only look for direct child Name field, not nested in ContactPhoto
+            # Use ns:field to only search direct children, not .//ns:field which searches all descendants
+            name_field = None
+            for field in contact_model.findall('ns:field', ns):
+                if field.get('name') == 'Name':
+                    name_value = field.find('ns:value', ns)
+                    if name_value is not None and name_value.text:
+                        # Validate this is a real name, not a photo filename
+                        name_text = name_value.text
+                        # Skip if it looks like a photo filename (contains .thumb, .jpg, .j and has phone-timestamp pattern)
+                        if not any(ext in name_text for ext in ['.thumb', '.jpg', '.jpeg', '.png', '.j']) and not (len(name_text) > 10 and '-' in name_text and name_text.split('-')[0].isdigit()):
+                            contact_data['name'] = name_text
+                    break
             
             # Extract photo path from ContactPhoto model
             # Two possible sources: 
