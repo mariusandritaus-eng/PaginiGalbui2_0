@@ -841,6 +841,7 @@ def upload_cellebrite_dump(
     
     # Extract device info early from filename
     device_info = sanitize_filename(file.filename.replace('.zip', ''))
+    device_from_filename = device_info  # Store original filename-based device
     safe_device = device_info if device_info else 'Unknown_Device'
     
     # Create directory structure: uploads/CaseNumber/SuspectName/Device
