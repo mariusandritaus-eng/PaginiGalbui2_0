@@ -685,7 +685,11 @@ function App() {
   let caseFilteredCredentials = searchFilteredCredentials;
   
   if (selectedCase) {
-    caseFilteredContacts = searchFilteredContacts.filter(c => c.case_number === selectedCase);
+    // Filter contacts by checking if selectedCase exists in the contact's cases array
+    // This ensures merged contacts appear for ALL their associated cases
+    caseFilteredContacts = searchFilteredContacts.filter(c => 
+      c.cases && c.cases.includes(selectedCase)
+    );
     caseFilteredCredentials = searchFilteredCredentials.filter(c => c.case_number === selectedCase);
   }
 
