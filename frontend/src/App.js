@@ -584,64 +584,10 @@ function App() {
       types: {}
     };
 
-    // For each filter field, apply all OTHER filters to get cascading options
-    const getFilteredDataForField = (excludeField) => {
-      return data.filter(item => {
-        if (excludeField !== 'source' && currentFilters.source && currentFilters.source !== "all") {
-          if (item.source !== currentFilters.source) return false;
-        }
-        // Category filter only for contacts
-        if (excludeField !== 'category' && currentFilters.category && currentFilters.category !== "all") {
-          if (item.category !== currentFilters.category) return false;
-        }
-        if (excludeField !== 'application' && currentFilters.application && currentFilters.application !== "all") {
-          const itemApp = item.application || item.source || item.raw_data?.fields?.ServiceIdentifier || item.url;
-          if (itemApp !== currentFilters.application) return false;
-        }
-        if (excludeField !== 'email_domain' && currentFilters.email_domain && currentFilters.email_domain !== "all") {
-          if (item.email_domain !== currentFilters.email_domain) return false;
-        }
-        if (excludeField !== 'device' && currentFilters.device && currentFilters.device !== "all") {
-          if (item.device_info !== currentFilters.device) return false;
-        }
-        if (excludeField !== 'case' && currentFilters.case && currentFilters.case !== "all") {
-          if (item.case_number !== currentFilters.case) return false;
-        }
-        if (excludeField !== 'suspect' && currentFilters.suspect && currentFilters.suspect !== "all") {
-          if (item.person_name !== currentFilters.suspect) return false;
-        }
-        if (excludeField !== 'account' && currentFilters.account && currentFilters.account !== "all") {
-          const itemAccount = item.username || item.email || item.raw_data?.fields?.Account;
-          if (itemAccount !== currentFilters.account) return false;
-        }
-        if (excludeField !== 'service' && currentFilters.service && currentFilters.service !== "all") {
-          const itemService = item.application || item.raw_data?.fields?.Source || item.raw_data?.fields?.ServiceIdentifier;
-          if (itemService !== currentFilters.service) return false;
-        }
-        if (excludeField !== 'type' && currentFilters.type && currentFilters.type !== "all") {
-          const itemType = item.raw_data?.fields?.Type || item.category;
-          if (itemType !== currentFilters.type) return false;
-        }
-        // Has Name filter (contacts only)
-        if (excludeField !== 'hasName' && currentFilters.hasName && currentFilters.hasName !== "all") {
-          const hasName = item.name && item.name.trim() !== '';
-          if (currentFilters.hasName === "yes" && !hasName) return false;
-          if (currentFilters.hasName === "no" && hasName) return false;
-        }
-        // Has Photo filter (contacts only)
-        if (excludeField !== 'hasPhoto' && currentFilters.hasPhoto && currentFilters.hasPhoto !== "all") {
-          const hasPhoto = item.photo_path && item.photo_path.trim() !== '';
-          if (currentFilters.hasPhoto === "yes" && !hasPhoto) return false;
-          if (currentFilters.hasPhoto === "no" && hasPhoto) return false;
-        }
-        return true;
-      });
-    };
-
-    // Build options for each field based on data filtered by all other fields
+    // Build options directly from all data (no cascading filters)
+    // This ensures all available criteria are always visible in filters
     const buildOptions = (field, getter) => {
-      const filteredData = getFilteredDataForField(field);
-      filteredData.forEach(item => {
+      data.forEach(item => {
         const values = getter(item);
         values.forEach(val => {
           if (val) {
