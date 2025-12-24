@@ -1258,7 +1258,7 @@ function App() {
                             </TableCell>
                             <TableCell className="text-white font-medium">
                               <div>
-                                {contact.name || '-'}
+                                {cleanDisplayName(contact.name) || '-'}
                                 {contact.all_names && contact.all_names.length > 1 && (
                                   <div className="text-xs text-neutral-400 mt-1">
                                     <div className="font-semibold text-amber-400 mb-1">Name variations across devices:</div>
@@ -1273,7 +1273,7 @@ function App() {
                                       
                                       return (
                                         <div key={idx} className="ml-2 mb-1">
-                                          • "{displayName}"
+                                          • "{cleanDisplayName(displayName)}"
                                           {device && <span className="text-neutral-500"> on {device}</span>}
                                           {source && <span className="text-neutral-500"> ({source})</span>}
                                         </div>
