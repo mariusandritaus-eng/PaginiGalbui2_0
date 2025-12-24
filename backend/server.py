@@ -578,16 +578,22 @@ def parse_contacts_xml(xml_content: str) -> List[Dict[str, Any]]:
                 'models': raw_models
             }
             
-            # Only add contact if it has a phone number AND it's not a WhatsApp group/newsletter/broadcast
+            # Only add contact if it has a phone number AND it's not a WhatsApp group/newsletter/broadcast/bot/lid
             # Check both phone and user_id for group identifiers
             phone = contact_data.get('phone', '')
             user_id = contact_data.get('user_id', '')
             
-            # Skip if it's a WhatsApp group (identified by @g.us in user_id or phone)
-            # or broadcast list (@broadcast)
-            # or newsletter/channel (@newsletter)
-            if phone and '@g.us' not in phone and '@broadcast' not in phone and '@newsletter' not in phone \
-                    and '@g.us' not in user_id and '@broadcast' not in user_id and '@newsletter' not in user_id:
+            # Skip if it's a WhatsApp group/newsletter/broadcast/bot/business account
+            # Identifiers: @g.us (groups), @broadcast (broadcasts), @newsletter (channels), @lid (business), @bot (bots)
+            whatsapp_system_identifiers = ['@g.us', '@broadcast', '@newsletter', '@lid', '@bot']
+            
+            is_whatsapp_system = False
+            for identifier in whatsapp_system_identifiers:
+                if identifier in phone or identifier in user_id:
+                    is_whatsapp_system = True
+                    break
+            
+            if phone and not is_whatsapp_system:
                 contacts.append(contact_data)
     
     except Exception as e:
