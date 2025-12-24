@@ -14,7 +14,6 @@ function AdminPanel({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [expandedCases, setExpandedCases] = useState({});
-  const [cleaningUp, setCleaningUp] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
