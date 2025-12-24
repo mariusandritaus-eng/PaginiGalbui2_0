@@ -2247,11 +2247,15 @@ async def get_contact_details(contact_id: str):
                 'group_name': group_name
             })
     
+    # Sort identities by case number and name
+    all_identities.sort(key=lambda x: (x.get('case_number', ''), x.get('name', '')))
+    
     return {
         "main_contact": contact,
         "all_records": all_contacts,
         "total_duplicates": len(all_contacts),
-        "whatsapp_groups": parsed_groups
+        "whatsapp_groups": parsed_groups,
+        "all_identities": all_identities  # NEW: All known identities for this phone number
     }
 
 @api_router.get("/filters/{data_type}")
