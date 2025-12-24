@@ -1704,8 +1704,8 @@ async def get_image(file_path: str):
 @api_router.get("/contacts/deduplicated")
 async def get_deduplicated_contacts():
     """Get contacts grouped by normalized phone number (deduplicated)"""
-    # Get all contacts
-    all_contacts = await db.contacts.find().to_list(10000)
+    # Get all contacts (no limit)
+    all_contacts = await db.contacts.find().to_list(None)
     
     # Build a phone-to-photo mapping for suspect lookup
     phone_to_photo = {}
