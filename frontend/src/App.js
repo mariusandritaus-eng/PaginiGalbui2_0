@@ -2651,7 +2651,7 @@ function App() {
                 />
               )}
               <div>
-                <div className="text-2xl">{selectedContact?.name || 'Contact Details'}</div>
+                <div className="text-2xl">{cleanDisplayName(selectedContact?.name) || 'Contact Details'}</div>
                 <div className="text-sm text-neutral-400 font-normal">{selectedContact?.phone}</div>
               </div>
             </DialogTitle>
