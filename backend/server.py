@@ -2337,10 +2337,13 @@ async def get_filters(data_type: str):
 
 @api_router.get("/whatsapp-groups")
 async def get_whatsapp_groups():
-    """Get all WhatsApp groups from whatsapp_groups collection with members"""
+    """
+    Get WhatsApp groups with identity-level aggregation and case-based filtering.
+    Groups with the same group_id across multiple uploads are merged into one logical group.
+    """
     try:
         # Fetch all groups from the whatsapp_groups collection
-        groups = await db.whatsapp_groups.find(
+        all_groups = await db.whatsapp_groups.find(
             {},
             {"_id": 0}
         ).to_list(None)
@@ -2352,7 +2355,52 @@ async def get_whatsapp_groups():
              "case_number": 1, "device_info": 1, "whatsapp_groups": 1}
         ).to_list(100000)
         
-        # Build a mapping of group_id -> group_name from contacts' whatsapp_groups
+        # Step 1: Aggregate groups by group_id (identity-level aggregation)
+        aggregated_groups = {}
+        
+        for group in all_groups:
+            group_id = group.get('group_id')
+            if not group_id:
+                continue
+            
+            # Convert datetime if needed
+            if isinstance(group.get('created_at'), str):
+                group['created_at'] = datetime.fromisoformat(group['created_at'])
+            
+            if group_id not in aggregated_groups:
+                # First instance of this group
+                aggregated_groups[group_id] = {
+                    'group_id': group_id,
+                    'group_name': group.get('group_name', group_id),
+                    'photo_path': group.get('photo_path'),
+                    'source': group.get('source', 'WhatsApp'),
+                    'created_at': group.get('created_at'),
+                    'cases': set(),
+                    'devices': set(),
+                    'suspects': set(),
+                    'sources': []  # Track all upload sources
+                }
+            
+            # Aggregate case, device, and suspect info from this upload instance
+            if group.get('case_number'):
+                aggregated_groups[group_id]['cases'].add(group['case_number'])
+            if group.get('device_info'):
+                aggregated_groups[group_id]['devices'].add(group['device_info'])
+            if group.get('person_name'):
+                aggregated_groups[group_id]['suspects'].add(group['person_name'])
+            
+            # Track source info for detailed view
+            aggregated_groups[group_id]['sources'].append({
+                'case_number': group.get('case_number'),
+                'person_name': group.get('person_name'),
+                'device_info': group.get('device_info')
+            })
+            
+            # Prefer photo from first upload if not set
+            if not aggregated_groups[group_id]['photo_path'] and group.get('photo_path'):
+                aggregated_groups[group_id]['photo_path'] = group['photo_path']
+        
+        # Step 2: Build a mapping of group_id -> group_name from contacts' whatsapp_groups
         # Format in contacts: "120363212727307534@g.us BLOC DE BAȘTINĂ (bdb)"
         group_names_from_contacts = {}
         for contact in contacts_with_groups:
@@ -2365,7 +2413,7 @@ async def get_whatsapp_groups():
                         if group_name and group_id not in group_names_from_contacts:
                             group_names_from_contacts[group_id] = group_name
         
-        # Build a mapping of group_id -> members
+        # Step 3: Build a mapping of group_id -> members (with case info)
         group_members = {}
         for contact in contacts_with_groups:
             for group_str in (contact.get('whatsapp_groups') or []):
@@ -2376,7 +2424,7 @@ async def get_whatsapp_groups():
                     if group_id not in group_members:
                         group_members[group_id] = []
                     
-                    # Add member info
+                    # Add member info with case association
                     member_info = {
                         'id': contact.get('id'),
                         'name': contact.get('name'),
@@ -2387,52 +2435,49 @@ async def get_whatsapp_groups():
                         'device_info': contact.get('device_info')
                     }
                     
-                    # Avoid duplicates (same phone in same group)
+                    # Add case and device to aggregated group
+                    if group_id in aggregated_groups:
+                        if contact.get('case_number'):
+                            aggregated_groups[group_id]['cases'].add(contact['case_number'])
+                        if contact.get('device_info'):
+                            aggregated_groups[group_id]['devices'].add(contact['device_info'])
+                        if contact.get('person_name'):
+                            aggregated_groups[group_id]['suspects'].add(contact['person_name'])
+                    
+                    # Avoid duplicate members (same phone in same group)
                     existing_phones = [m.get('phone') for m in group_members[group_id]]
                     if contact.get('phone') not in existing_phones:
                         group_members[group_id].append(member_info)
         
-        # Format groups for frontend
+        # Step 4: Format aggregated groups for frontend
         groups_list = []
-        for group in groups:
-            # Convert datetime if needed
-            if isinstance(group.get('created_at'), str):
-                group['created_at'] = datetime.fromisoformat(group['created_at'])
-            
-            group_id = group.get('group_id')
-            group_name = group.get('group_name')
+        for group_id, group_data in aggregated_groups.items():
+            group_name = group_data['group_name']
             
             # If group_name is just the group_id (no real name), try to get it from contacts
-            if group_name and group_name == group_id:
-                if group_id in group_names_from_contacts:
-                    group_name = group_names_from_contacts[group_id]
+            if group_name == group_id and group_id in group_names_from_contacts:
+                group_name = group_names_from_contacts[group_id]
             
             # Get members for this group
             members = group_members.get(group_id, [])
             
-            # Collect unique cases and devices from members
-            cases = set([group.get('case_number')] if group.get('case_number') else [])
-            devices = set([group.get('device_info')] if group.get('device_info') else [])
-            for member in members:
-                if member.get('case_number'):
-                    cases.add(member['case_number'])
-                if member.get('device_info'):
-                    devices.add(member['device_info'])
+            # Convert sets to sorted lists
+            cases_list = sorted(list(group_data['cases']))
+            devices_list = sorted(list(group_data['devices']))
+            suspects_list = sorted(list(group_data['suspects']))
             
             group_entry = {
                 'group_id': group_id,
                 'group_name': group_name,
-                'photo_path': group.get('photo_path'),
-                'case_number': group.get('case_number'),
-                'person_name': group.get('person_name'),
-                'device_info': group.get('device_info'),
-                'suspect_phone': group.get('suspect_phone'),
-                'source': group.get('source', 'WhatsApp'),
-                'created_at': group.get('created_at'),
-                'cases': list(cases),
-                'devices': list(devices),
+                'photo_path': group_data['photo_path'],
+                'source': group_data['source'],
+                'created_at': group_data['created_at'],
+                'cases': cases_list,
+                'devices': devices_list,
+                'suspects': suspects_list,
                 'members': members,
-                'member_count': len(members)
+                'member_count': len(members),
+                'upload_count': len(group_data['sources'])  # How many times this group was uploaded
             }
             groups_list.append(group_entry)
         
@@ -2446,7 +2491,7 @@ async def get_whatsapp_groups():
         
         groups_list.sort(key=sort_key)
         
-        logger.info(f"Returning {len(groups_list)} WhatsApp groups with members")
+        logger.info(f"Returning {len(groups_list)} aggregated WhatsApp groups (identity-level) with members")
         return groups_list
         
     except Exception as e:
