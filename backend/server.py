@@ -2192,6 +2192,7 @@ async def get_contact_details(contact_id: str):
     phone = contact.get('phone')
     all_contacts = []
     whatsapp_groups = []
+    all_identities = []
     
     if phone:
         # Normalize the phone to match against all variants
@@ -2206,6 +2207,27 @@ async def get_contact_details(contact_id: str):
                 all_contacts.append(c)
                 if isinstance(c.get('created_at'), str):
                     c['created_at'] = datetime.fromisoformat(c['created_at'])
+                
+                # Collect all identities from this contact
+                if c.get('identities'):
+                    for identity in c['identities']:
+                        # Avoid duplicates
+                        if identity not in all_identities:
+                            all_identities.append(identity)
+                else:
+                    # Fallback for contacts without identities array (old data)
+                    # Create identity from contact fields
+                    fallback_identity = {
+                        'name': c.get('name'),
+                        'case_number': c.get('case_number'),
+                        'suspect_name': c.get('person_name'),
+                        'device': c.get('device_info'),
+                        'source': c.get('source'),
+                        'upload_session_id': c.get('upload_session_id'),
+                        'added_at': c.get('created_at')
+                    }
+                    if fallback_identity not in all_identities:
+                        all_identities.append(fallback_identity)
                 
                 # Collect WhatsApp groups this contact is member of
                 if c.get('whatsapp_groups'):
