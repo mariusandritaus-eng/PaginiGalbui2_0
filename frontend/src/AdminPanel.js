@@ -70,24 +70,6 @@ function AdminPanel({ onClose }) {
     }));
   };
 
-  const handleCleanupGroups = async () => {
-    if (!window.confirm('Remove WhatsApp groups from contacts?\n\nThis will delete contacts where user_id contains @g.us (groups).\n\nThis fixes the issue where groups like "Clasa 7B" appear as contacts with hundreds of names.')) {
-      return;
-    }
-
-    setCleaningUp(true);
-    try {
-      const response = await axios.post(`${API}/admin/cleanup-groups`);
-      alert(`Success! Removed ${response.data.deleted_count} group records from contacts.\n\nPlease refresh the main app to see updated contact counts.`);
-      await loadCases(); // Reload to show updated counts
-    } catch (error) {
-      console.error('Error cleaning up groups:', error);
-      alert('Failed to cleanup groups: ' + error.message);
-    } finally {
-      setCleaningUp(false);
-    }
-  };
-
   const handleLogout = () => {
     setIsAuthenticated(false);
     setUsername('');
