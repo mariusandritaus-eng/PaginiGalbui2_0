@@ -1930,7 +1930,7 @@ async def get_deduplicated_credentials():
     passwords = await db.passwords.find({}, {"_id": 0}).to_list(None)
     accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(None)
     
-    # Combine and deduplicate
+    # Combine and deduplicate with cases tracking
     all_creds = []
     seen = {}
     
@@ -1941,10 +1941,24 @@ async def get_deduplicated_credentials():
         
         if key not in seen and username:
             pwd['duplicate_count'] = 1
+            pwd['cases'] = [pwd.get('case_number')] if pwd.get('case_number') else []
+            pwd['devices'] = [pwd.get('device_info')] if pwd.get('device_info') else []
+            pwd['suspects'] = [pwd.get('person_name')] if pwd.get('person_name') else []
             seen[key] = len(all_creds)
             all_creds.append(pwd)
         elif key in seen:
-            all_creds[seen[key]]['duplicate_count'] = all_creds[seen[key]].get('duplicate_count', 1) + 1
+            idx = seen[key]
+            all_creds[idx]['duplicate_count'] = all_creds[idx].get('duplicate_count', 1) + 1
+            # Track all unique cases, devices, and suspects
+            case = pwd.get('case_number')
+            if case and case not in all_creds[idx].get('cases', []):
+                all_creds[idx].setdefault('cases', []).append(case)
+            device = pwd.get('device_info')
+            if device and device not in all_creds[idx].get('devices', []):
+                all_creds[idx].setdefault('devices', []).append(device)
+            suspect = pwd.get('person_name')
+            if suspect and suspect not in all_creds[idx].get('suspects', []):
+                all_creds[idx].setdefault('suspects', []).append(suspect)
     
     for acc in accounts:
         # Filter: Only include Type: Default (skip Key, Secret, Token)
@@ -1959,10 +1973,24 @@ async def get_deduplicated_credentials():
         
         if key not in seen and username:
             acc['duplicate_count'] = 1
+            acc['cases'] = [acc.get('case_number')] if acc.get('case_number') else []
+            acc['devices'] = [acc.get('device_info')] if acc.get('device_info') else []
+            acc['suspects'] = [acc.get('person_name')] if acc.get('person_name') else []
             seen[key] = len(all_creds)
             all_creds.append(acc)
         elif key in seen:
-            all_creds[seen[key]]['duplicate_count'] = all_creds[seen[key]].get('duplicate_count', 1) + 1
+            idx = seen[key]
+            all_creds[idx]['duplicate_count'] = all_creds[idx].get('duplicate_count', 1) + 1
+            # Track all unique cases, devices, and suspects
+            case = acc.get('case_number')
+            if case and case not in all_creds[idx].get('cases', []):
+                all_creds[idx].setdefault('cases', []).append(case)
+            device = acc.get('device_info')
+            if device and device not in all_creds[idx].get('devices', []):
+                all_creds[idx].setdefault('devices', []).append(device)
+            suspect = acc.get('person_name')
+            if suspect and suspect not in all_creds[idx].get('suspects', []):
+                all_creds[idx].setdefault('suspects', []).append(suspect)
     
     for cred in all_creds:
         if isinstance(cred.get('created_at'), str):
