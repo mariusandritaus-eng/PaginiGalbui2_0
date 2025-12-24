@@ -58,6 +58,7 @@ function App() {
   const [caseNumber, setCaseNumber] = useState("");
   const [personName, setPersonName] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
   
   // Contact detail modal
   const [selectedContact, setSelectedContact] = useState(null);
