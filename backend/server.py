@@ -1386,7 +1386,7 @@ def upload_cellebrite_dump(
 @api_router.get("/contacts", response_model=List[Contact])
 async def get_contacts():
     """Get all contacts"""
-    contacts = await db.contacts.find({}, {"_id": 0}).to_list(10000)
+    contacts = await db.contacts.find({}, {"_id": 0}).to_list(None)
     for contact in contacts:
         if isinstance(contact.get('created_at'), str):
             contact['created_at'] = datetime.fromisoformat(contact['created_at'])
@@ -1395,7 +1395,7 @@ async def get_contacts():
 @api_router.get("/passwords", response_model=List[Password])
 async def get_passwords():
     """Get all passwords"""
-    passwords = await db.passwords.find({}, {"_id": 0}).to_list(10000)
+    passwords = await db.passwords.find({}, {"_id": 0}).to_list(None)
     for password in passwords:
         if isinstance(password.get('created_at'), str):
             password['created_at'] = datetime.fromisoformat(password['created_at'])
@@ -1404,7 +1404,7 @@ async def get_passwords():
 @api_router.get("/user-accounts", response_model=List[UserAccount])
 async def get_user_accounts():
     """Get all user accounts"""
-    accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(10000)
+    accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(None)
     for account in accounts:
         if isinstance(account.get('created_at'), str):
             account['created_at'] = datetime.fromisoformat(account['created_at'])
@@ -1422,7 +1422,7 @@ async def search_data(search: SearchQuery):
     
     if not search.data_type or search.data_type == 'contacts':
         # Search contacts
-        contacts = await db.contacts.find({}, {"_id": 0}).to_list(10000)
+        contacts = await db.contacts.find({}, {"_id": 0}).to_list(None)
         matched_contacts = []
         
         # Build phone-to-photo mapping for suspect lookup
@@ -1531,7 +1531,7 @@ async def search_data(search: SearchQuery):
     
     if not search.data_type or search.data_type == 'passwords':
         # Search passwords
-        passwords = await db.passwords.find({}, {"_id": 0}).to_list(10000)
+        passwords = await db.passwords.find({}, {"_id": 0}).to_list(None)
         for password in passwords:
             searchable_text = ' '.join([
                 str(password.get('application', '')),
@@ -1547,7 +1547,7 @@ async def search_data(search: SearchQuery):
     
     if not search.data_type or search.data_type == 'user_accounts':
         # Search user accounts
-        accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(10000)
+        accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(None)
         for account in accounts:
             searchable_text = ' '.join([
                 str(account.get('source', '')),
@@ -1855,7 +1855,7 @@ async def get_deduplicated_passwords():
         }
     ]
     
-    results = await db.passwords.aggregate(pipeline).to_list(10000)
+    results = await db.passwords.aggregate(pipeline).to_list(None)
     for result in results:
         if isinstance(result.get('created_at'), str):
             result['created_at'] = datetime.fromisoformat(result['created_at'])
@@ -1893,7 +1893,7 @@ async def get_deduplicated_accounts():
         }
     ]
     
-    results = await db.user_accounts.aggregate(pipeline).to_list(10000)
+    results = await db.user_accounts.aggregate(pipeline).to_list(None)
     for result in results:
         if isinstance(result.get('created_at'), str):
             result['created_at'] = datetime.fromisoformat(result['created_at'])
@@ -2003,8 +2003,8 @@ async def get_credential_details(credential_id: str):
 async def get_password_analysis():
     """Analyze password reuse across services - Shows how many times each password is used and where"""
     # Get all passwords and accounts
-    passwords = await db.passwords.find({}, {"_id": 0}).to_list(10000)
-    accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(10000)
+    passwords = await db.passwords.find({}, {"_id": 0}).to_list(None)
+    accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(None)
     
     # Build password usage map
     password_usage = {}  # password -> list of {service, username, case, device}
@@ -2174,7 +2174,7 @@ async def get_contact_details(contact_id: str):
         normalized = normalize_phone(phone)
         
         # Find all contacts with this phone or any variant
-        all_raw_contacts = await db.contacts.find({}, {"_id": 0}).to_list(10000)
+        all_raw_contacts = await db.contacts.find({}, {"_id": 0}).to_list(None)
         
         for c in all_raw_contacts:
             c_phone = c.get('phone')
@@ -2265,7 +2265,7 @@ async def get_whatsapp_groups():
         groups = await db.whatsapp_groups.find(
             {},
             {"_id": 0}
-        ).to_list(10000)
+        ).to_list(None)
         
         # Fetch all contacts that have whatsapp_groups to find members
         contacts_with_groups = await db.contacts.find(
@@ -2384,7 +2384,7 @@ async def get_group_members(group_id: str):
         contacts = await db.contacts.find(
             {"whatsapp_groups": {"$regex": f"^{group_id}"}},
             {"_id": 0}
-        ).to_list(10000)
+        ).to_list(None)
         
         # Convert datetime strings
         for contact in contacts:
@@ -2405,7 +2405,7 @@ async def get_discord_accounts():
         accounts = await db.user_accounts.find(
             {"source": "Discord"},
             {"_id": 0}
-        ).to_list(10000)
+        ).to_list(None)
         return accounts
     except Exception as e:
         logger.error(f"Error getting Discord accounts: {str(e)}")
@@ -2453,7 +2453,7 @@ async def export_passwords(request: ExportRequest):
         if request.application and request.application != "all":
             pwd_query["application"] = request.application
             
-        passwords = await db.passwords.find(pwd_query, {"_id": 0}).to_list(10000)
+        passwords = await db.passwords.find(pwd_query, {"_id": 0}).to_list(None)
         
         # 4. Fetch User Accounts
         # (Map 'application' filter to 'source' or 'service_identifier' for accounts)
@@ -2476,7 +2476,7 @@ async def export_passwords(request: ExportRequest):
                     {"service_identifier": request.application}
                 ]
             
-        accounts = await db.user_accounts.find(acc_query, {"_id": 0}).to_list(10000)
+        accounts = await db.user_accounts.find(acc_query, {"_id": 0}).to_list(None)
 
         # 5. Generate Output
         output = io.StringIO()
@@ -2570,7 +2570,7 @@ async def get_suspect_info():
     """Get suspect information for all cases"""
     try:
         # Get all unique cases with their suspect phones
-        contacts = await db.contacts.find({}, {"_id": 0, "case_number": 1, "person_name": 1, "suspect_phone": 1, "phone": 1, "photo_path": 1, "device_info": 1}).to_list(10000)
+        contacts = await db.contacts.find({}, {"_id": 0, "case_number": 1, "person_name": 1, "suspect_phone": 1, "phone": 1, "photo_path": 1, "device_info": 1}).to_list(None)
         
         # Build a map of case -> suspect info
         case_suspects = {}
@@ -2619,7 +2619,7 @@ async def get_contacts_by_photo(case_number: str):
         contacts = await db.contacts.find(
             {"case_number": case_number, "photo_path": {"$ne": None}},
             {"_id": 0}
-        ).to_list(10000)
+        ).to_list(None)
         
         # Group contacts by photo
         photo_groups = {}
@@ -2672,7 +2672,7 @@ async def cleanup_incorrect_photos():
     """Remove photos from contacts that incorrectly have the suspect's photo"""
     try:
         # Get all contacts
-        contacts = await db.contacts.find({}, {"_id": 0}).to_list(10000)
+        contacts = await db.contacts.find({}, {"_id": 0}).to_list(None)
         
         cleaned_count = 0
         total_with_photos = 0
