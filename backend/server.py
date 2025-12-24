@@ -579,14 +579,24 @@ def parse_whatsapp_groups_xml(xml_content: str) -> List[Dict[str, Any]]:
                 group_data['source'] = source or 'WhatsApp'
                 group_data['created_at'] = datetime.now(timezone.utc)
                 
-                # Extract photo path if available
+                # Extract photo path if available (both iOS and Android styles)
                 photo_models = contact_model.findall('.//ns:model[@type="ContactPhoto"]', ns)
                 if photo_models:
                     for photo_model in photo_models:
+                        # Try Local Path (iOS style)
                         local_path_elem = photo_model.find('.//ns:metadata[@section="File"]/ns:item[@name="Local Path"]', ns)
                         if local_path_elem is not None and local_path_elem.text:
                             photo_filename = local_path_elem.text.replace('\\', '/').split('/')[-1]
                             group_data['photo_filename'] = photo_filename
+                            group_data['photo_local_path'] = local_path_elem.text.replace('\\', '/')
+                            break
+                        # Try contactphoto_extracted_path (Android style)
+                        extracted_path_elem = photo_model.find('.//ns:field[@name="contactphoto_extracted_path"]/ns:value', ns)
+                        if extracted_path_elem is not None and extracted_path_elem.text:
+                            extracted_path = extracted_path_elem.text.replace('\\', '/')
+                            photo_filename = extracted_path.split('/')[-1]
+                            group_data['photo_filename'] = photo_filename
+                            group_data['photo_extracted_path'] = extracted_path
                             break
                 
                 groups.append(group_data)
