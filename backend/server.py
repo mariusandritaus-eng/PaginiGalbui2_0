@@ -1902,9 +1902,9 @@ async def get_deduplicated_accounts():
 @api_router.get("/credentials/deduplicated")
 async def get_deduplicated_credentials():
     """Get credentials grouped by username+application (deduplicated) - Only shows Type: Default"""
-    # Get both passwords and accounts
-    passwords = await db.passwords.find({}, {"_id": 0}).to_list(10000)
-    accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(10000)
+    # Get both passwords and accounts (no limit)
+    passwords = await db.passwords.find({}, {"_id": 0}).to_list(None)
+    accounts = await db.user_accounts.find({}, {"_id": 0}).to_list(None)
     
     # Combine and deduplicate
     all_creds = []
