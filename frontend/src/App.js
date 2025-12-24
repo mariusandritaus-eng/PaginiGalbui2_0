@@ -690,7 +690,11 @@ function App() {
     caseFilteredContacts = searchFilteredContacts.filter(c => 
       c.cases && c.cases.includes(selectedCase)
     );
-    caseFilteredCredentials = searchFilteredCredentials.filter(c => c.case_number === selectedCase);
+    // Filter credentials by checking if selectedCase exists in the credential's cases array
+    // This ensures merged credentials appear for ALL their associated cases
+    caseFilteredCredentials = searchFilteredCredentials.filter(c => 
+      c.cases && c.cases.includes(selectedCase)
+    );
   }
 
   // Get dynamic filter options from CASE-FILTERED data (shows only what's available in selected case)
