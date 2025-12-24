@@ -599,7 +599,15 @@ function App() {
     };
 
     buildOptions('categories', (item) => [item.category]);
-    buildOptions('sources', (item) => [item.source]);
+    buildOptions('sources', (item) => {
+      // Extract from both 'source' field and 'sources' array (for deduplicated contacts)
+      const allSources = [];
+      if (item.source) allSources.push(item.source);
+      if (item.sources && Array.isArray(item.sources)) {
+        allSources.push(...item.sources);
+      }
+      return allSources;
+    });
     buildOptions('applications', (item) => [
       item.application, 
       item.source, 
