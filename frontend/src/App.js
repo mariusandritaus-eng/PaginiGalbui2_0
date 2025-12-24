@@ -2681,6 +2681,59 @@ function App() {
                 </div>
               </div>
 
+              {/* All Known Identities - Multi-Identity Aggregation */}
+              {contactDetails.all_identities && contactDetails.all_identities.length > 0 && (
+                <div className="border-t border-neutral-800 pt-4">
+                  <h4 className="text-amber-400 text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    All Known Identities ({contactDetails.all_identities.length})
+                  </h4>
+                  <p className="text-xs text-neutral-500 mb-3">
+                    This phone number appears under multiple names across different cases and devices:
+                  </p>
+                  <div className="space-y-3">
+                    {contactDetails.all_identities.map((identity, idx) => (
+                      <div key={idx} className="bg-neutral-800/50 p-4 rounded-lg border border-neutral-700/50 hover:bg-neutral-800 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="text-white font-semibold text-base">
+                            "{identity.name || 'Unknown'}"
+                          </div>
+                          <Badge variant="outline" className="bg-amber-950 text-amber-300 border-amber-800 text-xs">
+                            {identity.source || 'Unknown Source'}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+                          <div>
+                            <span className="text-neutral-500">Case: </span>
+                            <span className="text-blue-400 font-medium">{identity.case_number || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-neutral-500">Suspect: </span>
+                            <span className="text-purple-400 font-medium">{identity.suspect_name || '-'}</span>
+                          </div>
+                          <div className="col-span-2">
+                            <span className="text-neutral-500">Device: </span>
+                            <span className="text-green-400 font-medium">{identity.device || '-'}</span>
+                          </div>
+                          {identity.added_at && (
+                            <div className="col-span-2">
+                              <span className="text-neutral-500">Added: </span>
+                              <span className="text-neutral-400 font-mono text-xs">
+                                {new Date(identity.added_at).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 p-3 bg-blue-950/30 border border-blue-800/50 rounded text-xs text-blue-300">
+                    <strong>📊 Investigation Insight:</strong> This contact has {contactDetails.all_identities.length} different identity record(s) across {[...new Set(contactDetails.all_identities.map(i => i.case_number))].length} case(s).
+                    {contactDetails.all_identities.length > 1 && ' This may indicate the same person using different names or aliases.'}
+                  </div>
+                </div>
+              )}
+
               {/* WhatsApp Groups */}
               {contactDetails.whatsapp_groups && contactDetails.whatsapp_groups.length > 0 && (
                 <div className="border-t border-neutral-800 pt-4">
