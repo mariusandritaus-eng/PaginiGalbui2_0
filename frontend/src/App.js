@@ -622,6 +622,18 @@ function App() {
           const itemType = item.raw_data?.fields?.Type || item.category;
           if (itemType !== currentFilters.type) return false;
         }
+        // Has Name filter (contacts only)
+        if (excludeField !== 'hasName' && currentFilters.hasName && currentFilters.hasName !== "all") {
+          const hasName = item.name && item.name.trim() !== '';
+          if (currentFilters.hasName === "yes" && !hasName) return false;
+          if (currentFilters.hasName === "no" && hasName) return false;
+        }
+        // Has Photo filter (contacts only)
+        if (excludeField !== 'hasPhoto' && currentFilters.hasPhoto && currentFilters.hasPhoto !== "all") {
+          const hasPhoto = item.photo_path && item.photo_path.trim() !== '';
+          if (currentFilters.hasPhoto === "yes" && !hasPhoto) return false;
+          if (currentFilters.hasPhoto === "no" && hasPhoto) return false;
+        }
         return true;
       });
     };
