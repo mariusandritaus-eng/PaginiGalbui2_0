@@ -1738,10 +1738,12 @@ async def get_deduplicated_contacts():
         if '_id' in merged_contact:
             del merged_contact['_id']
         
-        # Collect all phone variants, sources, and unique names
+        # Collect all phone variants, sources, unique names, and devices
         all_phones = []
         sources = []
         all_names = []  # Track all unique names
+        devices = []  # Track all unique devices
+        cases = []  # Track all unique cases
         
         # Merge information from all duplicates, prioritizing filled fields
         # PRIORITY: Best name wins (longest meaningful name, not phone numbers or service names)
@@ -1749,7 +1751,17 @@ async def get_deduplicated_contacts():
         best_name_score = 0  # Score based on length and meaningfulness
         
         for c in contacts:
-            # Collect all unique names
+            # Track unique devices (where this contact appears)
+            device = c.get('device_info')
+            if device and device not in devices:
+                devices.append(device)
+            
+            # Track unique cases
+            case = c.get('case_number')
+            if case and case not in cases:
+                cases.append(case)
+            
+            # Collect all unique names with device info
             current_name = c.get('name', '')
             if current_name and current_name != '-' and current_name.strip():
                 # Skip if name looks like a phone number (all digits/dashes/spaces)
@@ -1763,9 +1775,17 @@ async def get_deduplicated_contacts():
                     if len(current_name.strip()) < 6:
                         continue
                 
-                # Add to unique names list
-                if current_name not in all_names:
-                    all_names.append(current_name)
+                # Add to unique names list with device/case info
+                name_entry = {
+                    'name': current_name,
+                    'device': c.get('device_info', 'Unknown'),
+                    'case': c.get('case_number', 'Unknown'),
+                    'source': c.get('source', 'Agenda Telefon')
+                }
+                
+                # Check if we already have this exact name
+                if not any(n['name'] == current_name for n in all_names):
+                    all_names.append(name_entry)
                 
                 # Also track best name for primary display
                 name_score = len(current_name.strip())
@@ -1800,9 +1820,13 @@ async def get_deduplicated_contacts():
         if not merged_contact.get('source'):
             merged_contact['source'] = 'Agenda Telefon'
         
-        merged_contact['duplicate_count'] = len(contacts)
+        # Track duplicates: total records AND unique devices
+        merged_contact['duplicate_count'] = len(contacts)  # Total records
+        merged_contact['device_count'] = len(devices)  # How many different phones
+        merged_contact['devices'] = devices  # List of all devices
+        merged_contact['cases'] = cases  # List of all cases
         merged_contact['all_phones'] = all_phones
-        merged_contact['all_names'] = all_names  # All unique names
+        merged_contact['all_names'] = all_names  # All unique names with device info
         merged_contact['sources'] = sources
         
         # Ensure 'phone' field is populated with primary phone (first in list)
