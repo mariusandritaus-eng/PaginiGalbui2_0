@@ -993,11 +993,61 @@ function App() {
           </TabsList>
 
           <TabsContent value="contacts" className="space-y-4">
-            {selectedCase && (
+            {/* Active Filters Bar */}
+            {(selectedCase || Object.entries(filters.contacts).some(([k, v]) => v !== "all")) && (
               <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-neutral-400 text-sm">Case:</span>
-                  <Badge className="bg-amber-500 text-black font-semibold">{selectedCase}</Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-neutral-400 text-sm">Active Filters:</span>
+                  {selectedCase && (
+                    <Badge className="bg-amber-500 text-black font-semibold flex items-center gap-1">
+                      Case: {selectedCase}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCase("")} />
+                    </Badge>
+                  )}
+                  {filters.contacts.source !== "all" && (
+                    <Badge className="bg-blue-500 text-white flex items-center gap-1">
+                      Source: {filters.contacts.source}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, contacts: {...prev.contacts, source: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.contacts.category !== "all" && (
+                    <Badge className="bg-purple-500 text-white flex items-center gap-1">
+                      Category: {filters.contacts.category}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, contacts: {...prev.contacts, category: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.contacts.device !== "all" && (
+                    <Badge className="bg-green-500 text-white flex items-center gap-1">
+                      Device: {filters.contacts.device}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, contacts: {...prev.contacts, device: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.contacts.suspect !== "all" && (
+                    <Badge className="bg-orange-500 text-white flex items-center gap-1">
+                      Suspect: {filters.contacts.suspect}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, contacts: {...prev.contacts, suspect: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.contacts.hasName !== "all" && (
+                    <Badge className="bg-cyan-500 text-white flex items-center gap-1">
+                      {filters.contacts.hasName === "yes" ? "With Name" : "No Name"}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, contacts: {...prev.contacts, hasName: "all"}}))} />
+                    </Badge>
+                  )}
+                  {filters.contacts.hasPhoto !== "all" && (
+                    <Badge className="bg-pink-500 text-white flex items-center gap-1">
+                      {filters.contacts.hasPhoto === "yes" ? "With Photo" : "No Photo"}
+                      <X className="h-3 w-3 cursor-pointer" onClick={() => setFilters(prev => ({...prev, contacts: {...prev.contacts, hasPhoto: "all"}}))} />
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { clearFilters('contacts'); setSelectedCase(""); }}
+                    className="text-neutral-400 hover:text-white text-xs ml-2"
+                  >
+                    Clear All
+                  </Button>
                 </div>
               </div>
             )}
