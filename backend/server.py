@@ -968,18 +968,34 @@ def upload_cellebrite_dump(
                         'upload_session_id': upload_session_id
                     })
                     
-                    # Photo Match Logic - Two strategies:
-                    # Strategy 1: Match by photo_filename from XML (exact match)
+                    # Photo Match Logic - Multiple strategies:
                     matched_img = None
-                    photo_filename = contact_dict.get('photo_filename')
-                    if photo_filename:
-                        # Try exact match first (e.g., "40721208508-1482251074.thumb" or without extension)
-                        base_name = photo_filename.rsplit('.', 1)[0]  # Remove extension
-                        if base_name in image_by_full_name:
-                            matched_img = image_by_full_name[base_name]
-                            logger.info(f"Matched photo by XML filename: {photo_filename} -> {matched_img.name}")
                     
-                    # Strategy 2: Match by phone number (fallback)
+                    # Strategy 1: Match by extracted_path from XML (Android style)
+                    extracted_path = contact_dict.get('photo_extracted_path')
+                    if extracted_path and extracted_path in image_by_path:
+                        matched_img = image_by_path[extracted_path]
+                    
+                    # Strategy 2: Match by photo_filename from XML (exact match)
+                    if not matched_img:
+                        photo_filename = contact_dict.get('photo_filename')
+                        if photo_filename:
+                            # Try exact match with full name
+                            if photo_filename in image_by_full_name:
+                                matched_img = image_by_full_name[photo_filename]
+                            else:
+                                # Try without extension
+                                base_name = photo_filename.rsplit('.', 1)[0]
+                                if base_name in image_by_full_name:
+                                    matched_img = image_by_full_name[base_name]
+                    
+                    # Strategy 3: Match by local_path from XML
+                    if not matched_img:
+                        local_path = contact_dict.get('photo_local_path')
+                        if local_path and local_path in image_by_path:
+                            matched_img = image_by_path[local_path]
+                    
+                    # Strategy 4: Match by phone number (fallback)
                     if not matched_img:
                         phone = contact_dict.get('phone', '')
                         if phone:
@@ -993,12 +1009,11 @@ def upload_cellebrite_dump(
                                         if (code + norm_phone) in image_files:
                                             matched_img = image_files[code + norm_phone]
                                             break
-                                    # Try without leading 0
+                                    # Try without leading 0 or country code
                                     if not matched_img and norm_phone.startswith('0'):
                                         matched_img = image_files.get(norm_phone[1:])
-                                
-                                if matched_img:
-                                    logger.info(f"Matched photo by phone: {norm_phone} -> {matched_img.name}")
+                                    if not matched_img and norm_phone.startswith('40'):
+                                        matched_img = image_files.get(norm_phone[2:])
                     
                     # Copy matched image
                     if matched_img:
