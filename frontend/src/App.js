@@ -507,7 +507,7 @@ function App() {
 
   const clearFilters = (dataType) => {
     const defaultFilters = {
-      contacts: { source: "all", category: "all", device: "all", case: "all", suspect: "all" },
+      contacts: { source: "all", category: "all", device: "all", case: "all", suspect: "all", hasName: "all", hasPhoto: "all" },
       credentials: { application: "all", email_domain: "all", device: "all", case: "all", suspect: "all", account: "all", service: "all", type: "all" },
       whatsapp_groups: { device: "all", suspect: "all", case: "all" }
     };
