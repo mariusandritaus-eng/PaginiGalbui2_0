@@ -293,6 +293,65 @@ function AdminPanel({ onClose }) {
                 </div>
               ))}
             </div>
+            
+            {/* Data Cleanup Section */}
+            <div className="mt-8 pt-6 border-t border-neutral-700">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <Database className="w-5 h-5 text-amber-500" />
+                Database Cleanup Tools
+              </h3>
+              <p className="text-sm text-neutral-400 mb-4">
+                Remove incorrectly imported data from the database
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Remove all WhatsApp newsletter/channel entries from contacts? This will clean up duplicate contact records.')) return;
+                    setLoading(true);
+                    try {
+                      const response = await axios.post(`${API}/admin/cleanup-newsletters`);
+                      alert(`✅ Success: ${response.data.message}`);
+                      await loadCases(); // Reload to show updated counts
+                    } catch (error) {
+                      alert(`❌ Error: ${error.message}`);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="px-4 py-3 bg-blue-900/30 hover:bg-blue-900/50 border border-blue-800/50 text-blue-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clean Newsletters
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Remove all WhatsApp group entries from contacts? This will clean up group records.')) return;
+                    setLoading(true);
+                    try {
+                      const response = await axios.post(`${API}/admin/cleanup-groups`);
+                      alert(`✅ Success: ${response.data.message}`);
+                      await loadCases();
+                    } catch (error) {
+                      alert(`❌ Error: ${error.message}`);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="px-4 py-3 bg-purple-900/30 hover:bg-purple-900/50 border border-purple-800/50 text-purple-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clean Groups
+                </button>
+              </div>
+              
+              <div className="mt-3 p-3 bg-neutral-800/50 rounded-lg text-xs text-neutral-400">
+                <strong>Note:</strong> These tools remove incorrectly imported data. Future uploads will automatically filter out these entries.
+              </div>
+            </div>
             </>
           )}
         </div>
