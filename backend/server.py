@@ -3316,22 +3316,27 @@ async def cleanup_groups_from_contacts():
 
 @api_router.post("/admin/cleanup-newsletters")
 async def cleanup_newsletters_from_contacts():
-    """Remove WhatsApp newsletters/channels that were incorrectly added to contacts"""
+    """Remove WhatsApp newsletters/channels/bots/business accounts that were incorrectly added to contacts"""
     try:
-        # Find and delete contacts where user_id contains @newsletter
+        # Find and delete contacts where user_id contains WhatsApp system identifiers
+        # @newsletter (channels), @lid (business accounts), @bot (automated bots)
         result = await db.contacts.delete_many({
             "$or": [
                 {"user_id": {"$regex": "@newsletter"}},
-                {"phone": {"$regex": "@newsletter"}}
+                {"phone": {"$regex": "@newsletter"}},
+                {"user_id": {"$regex": "@lid"}},
+                {"phone": {"$regex": "@lid"}},
+                {"user_id": {"$regex": "@bot"}},
+                {"phone": {"$regex": "@bot"}}
             ]
         })
         
-        logger.info(f"Cleaned up {result.deleted_count} newsletter records from contacts")
+        logger.info(f"Cleaned up {result.deleted_count} WhatsApp system records from contacts")
         
         return {
             'success': True,
             'deleted_count': result.deleted_count,
-            'message': f'Removed {result.deleted_count} WhatsApp newsletters/channels from contacts'
+            'message': f'Removed {result.deleted_count} WhatsApp newsletters/bots/business accounts from contacts'
         }
         
     except Exception as e:
