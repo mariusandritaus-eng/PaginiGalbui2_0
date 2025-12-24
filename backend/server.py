@@ -441,18 +441,30 @@ def parse_contacts_xml(xml_content: str) -> List[Dict[str, Any]]:
                     contact_data['name'] = name_value.text
             
             # Extract photo path from ContactPhoto model
+            # Two possible sources: 
+            # 1. Local Path in metadata (iOS style): files\Image\40721208508-1482251074.thumb
+            # 2. contactphoto_extracted_path (Android style): contacts\WhatsApp_...\ID\filename.j
             photo_models = contact_model.findall('.//ns:model[@type="ContactPhoto"]', ns)
             if photo_models:
                 for photo_model in photo_models:
-                    # Try to get Local Path from metadata
+                    # Try Strategy 1: Local Path from metadata
                     local_path_elem = photo_model.find('.//ns:metadata[@section="File"]/ns:item[@name="Local Path"]', ns)
                     if local_path_elem is not None and local_path_elem.text:
                         # Local Path format: files\Image\40721208508-1482251074.thumb
-                        # Extract just the filename part
                         photo_filename = local_path_elem.text.replace('\\', '/').split('/')[-1]
-                        # Store the filename (will be matched later during upload)
                         contact_data['photo_filename'] = photo_filename
-                        logger.info(f"Found photo for contact: {photo_filename}")
+                        # Also store full path for direct matching
+                        contact_data['photo_local_path'] = local_path_elem.text.replace('\\', '/')
+                        break
+                    
+                    # Try Strategy 2: contactphoto_extracted_path field
+                    extracted_path_elem = photo_model.find('.//ns:field[@name="contactphoto_extracted_path"]/ns:value', ns)
+                    if extracted_path_elem is not None and extracted_path_elem.text:
+                        # Path format: contacts\WhatsApp_...\ID\filename.j
+                        extracted_path = extracted_path_elem.text.replace('\\', '/')
+                        photo_filename = extracted_path.split('/')[-1]
+                        contact_data['photo_filename'] = photo_filename
+                        contact_data['photo_extracted_path'] = extracted_path
                         break
             
             # Get phone numbers
