@@ -48,16 +48,25 @@ function AdminPanel({ onClose }) {
     }
   };
 
-  const handleDeleteSession = async (profileId) => {
+  const handleDeleteSession = async (session) => {
     setLoading(true);
     try {
-      await axios.delete(`${API}/admin/sessions/by-profile/${encodeURIComponent(profileId)}`);
+      // Use profile_id method if available (more precise)
+      if (session.profile_id) {
+        await axios.delete(`${API}/admin/sessions/by-profile/${encodeURIComponent(session.profile_id)}`);
+      } else {
+        // Fallback to case_number/person_name/device_info method for sessions without profile_id
+        const caseNumber = encodeURIComponent(session.case_number);
+        const personName = encodeURIComponent(session.person_name);
+        const deviceInfo = encodeURIComponent(session.device_info);
+        await axios.delete(`${API}/admin/sessions/${caseNumber}/${personName}/${deviceInfo}`);
+      }
       // Reload cases after deletion
       await loadCases();
       setDeleteConfirm(null);
     } catch (error) {
       console.error('Error deleting session:', error);
-      alert('Failed to delete session: ' + error.message);
+      alert('Failed to delete session: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
